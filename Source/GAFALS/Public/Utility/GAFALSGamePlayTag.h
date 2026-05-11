@@ -1,0 +1,10 @@
+#pragma once
+
+#include "NativeGameplayTags.h"
+
+namespace GAFALSGaitTags
+{
+	GAFALS_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Walking)
+		GAFALS_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Running)
+			GAFALS_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Sprinting)
+}

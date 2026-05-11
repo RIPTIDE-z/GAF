@@ -1,0 +1,53 @@
+# Unreal generated files
+Build/
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+
+# IDE and editor state
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / Rider generated files
+*.VC.db
+*.VC.opendb
+*.sln
+*.opensdf
+*.sdf
+.idea/
+
+# Unreal generated project files
+*.code-workspace
+*.xcworkspace
+*.xcodeproj
+
+# Build products and debug symbols
+*.dll
+*.dylib
+*.exe
+*.exp
+*.ilk
+*.lib
+*.obj
+*.pdb
+*.so
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Personal files
+Reference/
