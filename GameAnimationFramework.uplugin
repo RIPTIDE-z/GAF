@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "0.1",
 	"FriendlyName": "GAF",
-	"Description": "Game Animation Framework, A reusable Animation Framework designed to consolidate some character animation architecture , including Lyra, ALS(Refactored), GASP",
+	"Description": "Game Animation Framework, a reusable character animation architecture for Unreal Engine",
 	"Category": "Animation",
 	"CreatedBy": "RIPTIDEz",
 	"EnabledByDefault": true,
@@ -13,17 +13,12 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "GAFMM",
+			"Name": "GAF",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "GAFALS",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "GAFAlsPlayable",
+			"Name": "GAFPlayable",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
