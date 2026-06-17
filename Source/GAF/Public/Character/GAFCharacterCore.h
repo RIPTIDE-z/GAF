@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "State/GAFViewState.h"
 #include "GAFCharacterCore.generated.h"
 
 class UGAFCharacterMovementComponent;

@@ -6,7 +6,6 @@
 #include "Curves/CurveVector.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
-#include "Utility/GAFVector.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterMovementComponent)
 

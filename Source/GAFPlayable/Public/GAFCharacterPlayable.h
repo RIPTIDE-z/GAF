@@ -37,4 +37,6 @@ protected:
 	virtual void Input_OnLook(const FInputActionValue& ActionValue);
 
 	virtual void Input_OnMove(const FInputActionValue& ActionValue);
+
+	virtual void Input_OnMoveWorldSpace(const FInputActionValue& ActionValue);
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Animation/AnimInstance.h"
-#include "Utility/GAFGamePlayTag.h"
+#include "GAFGamePlayTag.h"
 
 #include "GAFAnimInstance.generated.h"
 
