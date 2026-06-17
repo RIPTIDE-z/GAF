@@ -5,24 +5,23 @@
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterCore)
 
 // Core character type used by the framework
+// 框架使用的核心角色类
 AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer)
 	: Super{
+		// 使用自定义CMC覆盖默认CMC
 		ObjectInitializer.SetDefaultSubobjectClass<UGAFCharacterMovementComponent>(CharacterMovementComponentName)
 	}
 {
-	// Tick every frame so character state can be updated by framework systems
 	PrimaryActorTick.bCanEverTick = true;
 
 	GAFCharacterMovement = Cast<UGAFCharacterMovementComponent>(GetCharacterMovement());
 }
 
-// Called when the game starts or when spawned
 void AGAFCharacterCore::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-// Called every frame
 void AGAFCharacterCore::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

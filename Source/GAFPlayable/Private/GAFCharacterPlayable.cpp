@@ -13,9 +13,11 @@ AGAFCharacterPlayable::AGAFCharacterPlayable()
 }
 
 // Update input mapping when the pawn changes controller
+// Controller变动时绑定IMC
 void AGAFCharacterPlayable::NotifyControllerChanged()
 {
 	// Remove mapping from the previous player controller
+	// 移除旧的IMC
 	const auto* PreviousPlayerController{ Cast<APlayerController>(PreviousController) };
 	if (IsValid(PreviousPlayerController))
 	{
@@ -44,6 +46,7 @@ void AGAFCharacterPlayable::NotifyControllerChanged()
 }
 
 // Bind concrete input actions
+// 绑定Action
 void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 {
 	Super::SetupPlayerInputComponent(Input);
