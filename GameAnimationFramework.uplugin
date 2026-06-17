@@ -18,6 +18,11 @@
 			"LoadingPhase": "Default"
 		},
 		{
+			"Name": "GAFInput",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "GAFPlayable",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"

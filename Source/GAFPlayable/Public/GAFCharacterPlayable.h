@@ -7,6 +7,7 @@
 struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
+class UGAFInputConfig;
 
 // Playable character base for blueprint-controlled pawns
 UCLASS()
@@ -20,38 +21,10 @@ public:
 	// React when this pawn changes controller
 	virtual void NotifyControllerChanged() override;
 
-protected:
-	// Input mapping context asset
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|GAF Character Playable|Input Mapping Context")
-	TObjectPtr<UInputMappingContext> InputMappingContext;
-
-	// Mouse look action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|GAF Character Playable|Input Action")
-	TObjectPtr<UInputAction> LookMouseAction;
-
-	// Gamepad look action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|GAF Character Playable|Input Action")
-	TObjectPtr<UInputAction> LookAction;
-
-	// Movement action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|GAF Character Playable|Input Action")
-	TObjectPtr<UInputAction> MoveAction;
-
-	// Mouse vertical look sensitivity
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|GAF Character Playable|Input Settings", Meta = (ClampMin = 0, ForceUnits = "x"))
-	float LookUpMouseSensitivity{ 1.0f };
-
-	// Mouse horizontal look sensitivity
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|GAF Character Playable|Input Settings", Meta = (ClampMin = 0, ForceUnits = "x"))
-	float LookRightMouseSensitivity{ 1.0f };
-
-	// Gamepad vertical look rate
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|GAF Character Playable|Input Settings", Meta = (ClampMin = 0, ForceUnits = "deg/s"))
-	float LookUpRate{ 90.0f };
-
-	// Gamepad horizontal look rate
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|GAF Character Playable|Input Settings", Meta = (ClampMin = 0, ForceUnits = "deg/s"))
-	float LookRightRate{ 240.0f };
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Settings|Input")
+	TObjectPtr<const UGAFInputConfig> InputConfig;
+	
 
 protected:
 	// Bind input actions

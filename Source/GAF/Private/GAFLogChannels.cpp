@@ -1,8 +1,6 @@
 #include "GAFLogChannels.h"
 #include "GameFramework/Actor.h"
 
-DEFINE_LOG_CATEGORY(LogGAFInput);
-
 // 判断是Client还是Server的日志
 FString GetClientServerContextString(UObject* ContextObject)
 {

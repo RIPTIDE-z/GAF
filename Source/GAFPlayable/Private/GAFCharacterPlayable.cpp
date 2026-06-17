@@ -4,7 +4,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
-#include "Utility/GAFVector.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterPlayable)
 
@@ -16,6 +15,11 @@ AGAFCharacterPlayable::AGAFCharacterPlayable()
 // Controller变动时绑定IMC
 void AGAFCharacterPlayable::NotifyControllerChanged()
 {
+	if (!IsValid(InputConfig) || !IsValid(InputConfig->InputMappingContext))
+	{
+		UE_LOG(LogTemp, Error, TEXT("InputConfig Invalid"));
+		return;
+	}
 	// Remove mapping from the previous player controller
 	// 移除旧的IMC
 	const auto* PreviousPlayerController{ Cast<APlayerController>(PreviousController) };
@@ -24,7 +28,7 @@ void AGAFCharacterPlayable::NotifyControllerChanged()
 		auto* EnhancedInputSubSystem{ ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PreviousPlayerController->GetLocalPlayer()) };
 		if (IsValid(EnhancedInputSubSystem))
 		{
-			EnhancedInputSubSystem->RemoveMappingContext(InputMappingContext);
+			EnhancedInputSubSystem->RemoveMappingContext(InputConfig->InputMappingContext);
 		}
 	}
 
@@ -38,7 +42,7 @@ void AGAFCharacterPlayable::NotifyControllerChanged()
 			// Notify user settings when adding the mapping
 			Options.bNotifyUserSettings = true;
 
-			EnhancedInputSubsystem->AddMappingContext(InputMappingContext, 0, Options);
+			EnhancedInputSubsystem->AddMappingContext(InputConfig->InputMappingContext, 0, Options);
 		}
 	}
 
@@ -50,17 +54,7 @@ void AGAFCharacterPlayable::NotifyControllerChanged()
 void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 {
 	Super::SetupPlayerInputComponent(Input);
-
-	auto* EnhancedInput{ Cast<UEnhancedInputComponent>(Input) };
-	if (IsValid(EnhancedInput))
-	{
-		EnhancedInput->BindAction(LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookMouse);
-		EnhancedInput->BindAction(LookMouseAction, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookMouse);
-		EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLook);
-		EnhancedInput->BindAction(LookAction, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLook);
-		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMove);
-		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMove);
-	}
+	
 }
 
 // Apply mouse look input directly
@@ -82,19 +76,5 @@ void AGAFCharacterPlayable::Input_OnLook(const FInputActionValue& ActionValue)
 
 void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
 {
-	// Clamp input to avoid faster diagonal movement
-	const auto Value{ UGAFVector::ClampMagnitude012D(ActionValue.Get<FVector2D>()) };
 
-	auto ViewRotation{ GetViewRotation() };
-
-	if (IsValid(GetController()))
-	{
-		FVector ViewLocation;
-		GetController()->GetPlayerViewPoint(ViewLocation, ViewRotation);
-	}
-
-	const auto ForwardDirection{ UGAFVector::AngleToDirectionXY(UE_REAL_TO_FLOAT(ViewRotation.Yaw)) };
-	const auto RightDirection{ UGAFVector::PerpendicularCounterClockwiseXY(ForwardDirection) };
-
-	AddMovementInput(ForwardDirection * Value.Y + RightDirection * Value.X);
 }

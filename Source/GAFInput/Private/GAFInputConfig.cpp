@@ -1,6 +1,6 @@
-#include "Input/GAFInputConfig.h"
+#include "GAFInputConfig.h"
 
-#include "GAFLogChannels.h"
+#include "GAFInputLogChannels.h"
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFInputConfig)
 
 

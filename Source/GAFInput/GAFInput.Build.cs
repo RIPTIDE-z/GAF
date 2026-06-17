@@ -1,26 +1,28 @@
 using UnrealBuildTool;
 
-public class GAFPlayable : ModuleRules
+public class GAFInput : ModuleRules
 {
-	public GAFPlayable(ReadOnlyTargetRules target) : base(target)
+	public GAFInput(ReadOnlyTargetRules target) : base(target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 
+		// Keep non-inlined generated source as a warning to speed up iteration
 		CppCompileWarningSettings.NonInlinedGenCppWarningLevel = WarningLevel.Warning;
 
 		PublicDependencyModuleNames.AddRange(new string[]
-		{
-			"Core",
-			"CoreUObject",
-			"Engine",
-			"GAF",
-			"GAFInput"
-		});
+			{
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"GameplayTags",
+				"EnhancedInput",
+			}
+		);
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"EnhancedInput"
 		});
+
 	}
 }

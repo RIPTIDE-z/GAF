@@ -24,22 +24,7 @@ public:
 	// Bind character input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-public:
-	const FGAFViewState& GetViewState() const;
-
-public:
-	virtual FRotator GetViewRotation() const override;
-
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAF Character")
 	TObjectPtr<UGAFCharacterMovementComponent> GAFCharacterMovement;
-
-	// Stores view state used by character-facing systems
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State|GAF Character", Transient)
-	FGAFViewState ViewState;
 };
-
-inline const FGAFViewState& AGAFCharacterCore::GetViewState() const
-{
-	return ViewState;
-}

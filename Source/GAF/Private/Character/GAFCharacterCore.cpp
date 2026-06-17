@@ -32,11 +32,3 @@ void AGAFCharacterCore::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
-
-FRotator AGAFCharacterCore::GetViewRotation() const
-{
-	// TODO:ViewState
-	// return ViewState.Rotation;
-
-	return GetController() ? GetController()->GetControlRotation() : Super::GetViewRotation();
-}
