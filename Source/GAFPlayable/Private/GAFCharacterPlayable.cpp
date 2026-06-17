@@ -53,40 +53,33 @@ void AGAFCharacterPlayable::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 }
 
-// Bind concrete input actions
-// 绑定Action
 void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 {
 	Super::SetupPlayerInputComponent(Input);
 
-	auto* EnhancedInput{ Cast<UEnhancedInputComponent>(Input) };
+	UEnhancedInputComponent* EnhancedInput{ Cast<UEnhancedInputComponent>(Input) };
 	if (!IsValid(EnhancedInput))
 	{
 		return;
 	}
 
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Triggered,
-	                           this, &ThisClass::Input_OnLookMouse, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Canceled,
-	                           this, &ThisClass::Input_OnLookMouse, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Triggered,
-	                           this, &ThisClass::Input_OnLook, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Canceled,
-	                           this, &ThisClass::Input_OnLook, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Triggered,
-	                           this, &ThisClass::Input_OnMove, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Canceled,
-	                           this, &ThisClass::Input_OnMove, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Triggered,
-	                           this, &ThisClass::Input_OnMoveWorldSpace, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Canceled,
-	                           this, &ThisClass::Input_OnMoveWorldSpace, false);
+	// 使用Helper绑定，按GamePlayTag来绑定输入，而不是直接绑定特定Action
+	// 这样可以让InputAction与角色解耦
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookMouse, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookMouse, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLook, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLook, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMove, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMove, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMoveWorldSpace, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMoveWorldSpace, false);
 }
 
-// Apply mouse look input directly
 void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionValue)
 {
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
+
+	// 如果Config无效就回退到默认值
 	const FGAFLookInputSettings DefaultLookSettings;
 	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->LookSettings : DefaultLookSettings };
 	const auto PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
@@ -110,7 +103,9 @@ void AGAFCharacterPlayable::Input_OnLook(const FInputActionValue& ActionValue)
 
 void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
 {
-	auto Value{ ActionValue.Get<FVector2D>() };
+	// TODO:
+	// 这里不区分手柄轻推和推满，默认全部满输入
+	FVector2D Value{ ActionValue.Get<FVector2D>() };
 	if (Value.IsNearlyZero())
 	{
 		return;
@@ -129,7 +124,7 @@ void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
 
 void AGAFCharacterPlayable::Input_OnMoveWorldSpace(const FInputActionValue& ActionValue)
 {
-	auto Value{ ActionValue.Get<FVector2D>() };
+	FVector2D Value{ ActionValue.Get<FVector2D>() };
 	if (Value.IsNearlyZero())
 	{
 		return;
@@ -137,6 +132,7 @@ void AGAFCharacterPlayable::Input_OnMoveWorldSpace(const FInputActionValue& Acti
 
 	Value.Normalize();
 
+	// 直接加世界方向的输入
 	AddMovementInput(FVector::RightVector, Value.X);
 	AddMovementInput(FVector::ForwardVector, Value.Y);
 }

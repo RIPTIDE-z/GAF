@@ -4,4 +4,4 @@
 
 class UObject;
 
-GAF_API FString GetClientServerContextString(UObject* ContextObject = nullptr);
+DECLARE_LOG_CATEGORY_EXTERN(LogGAFCore, Log, All);

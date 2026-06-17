@@ -5,10 +5,10 @@ namespace GAFGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait_Walk, "GAF.Gait.Walk", "Walking");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait_Run, "GAF.Gait.Run", "Running");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait_Sprint, "GAF.Gait.Sprint", "Sprinting");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stance_Stand, "GAF.Gait.Stand", "Standing");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stance_Crouch, "GAF.Gait.Crouch", "Crouching");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "GAF.InputTag.Move", "Move input");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move_WorldSpace, "GAF.InputTag.Move.WorldSpace", "World-space move input, useful for debug");
 

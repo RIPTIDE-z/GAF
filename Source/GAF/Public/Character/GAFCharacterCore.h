@@ -20,10 +20,11 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-	// Bind character input
+	// 处理输入系统
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
+	// 带有自定义逻辑的 CMC
 	UPROPERTY(BlueprintReadOnly, Category = "GAF Character")
 	TObjectPtr<UGAFCharacterMovementComponent> GAFCharacterMovement;
 };
