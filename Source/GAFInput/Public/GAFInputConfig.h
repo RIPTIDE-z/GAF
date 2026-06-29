@@ -2,6 +2,7 @@
 
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "GAFInputSettings.h"
 
 #include "GAFInputConfig.generated.h"
 
@@ -22,30 +23,6 @@ public:
 	FGameplayTag InputTag;
 };
 
-USTRUCT(BlueprintType)
-struct GAFINPUT_API FGAFLookInputSettings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	float MousePitchSensitivity{ 1.0f };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	float MouseYawSensitivity{ 1.0f };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	float GamepadPitchRate{ 90.0f };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	float GamepadYawRate{ 240.0f };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	bool bInvertPitch{ false };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Look")
-	bool bInvertYaw{ false };
-};
-
 UCLASS(BlueprintType, Const)
 class GAFINPUT_API UGAFInputConfig : public UDataAsset
 {
@@ -54,14 +31,14 @@ class GAFINPUT_API UGAFInputConfig : public UDataAsset
 public:
 	UGAFInputConfig(const FObjectInitializer& ObjectInitializer);
 
-	UFUNCTION(BlueprintCallable, Category = "GAF|Pawn")
+	UFUNCTION(BlueprintCallable, Category = "GAF|Input")
 	const UInputAction* FindNativeInputActionForTag(const FGameplayTag& InputTag, bool bLogNotFound = true) const;
 
-	UFUNCTION(BlueprintCallable, Category = "GAF|Pawn")
+	UFUNCTION(BlueprintCallable, Category = "GAF|Input")
 	const UInputAction* FindAbilityInputActionForTag(const FGameplayTag& InputTag, bool bLogNotFound = true) const;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", Meta = (TitleProperty = "InputMappingContext"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
 
 	// 手动绑定的输入集合
@@ -72,6 +49,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", Meta = (TitleProperty = "InputAction"))
 	TArray<FGAFInputAction> AbilityInputActions;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", Meta = (TitleProperty = "LookSettings"))
-	FGAFLookInputSettings LookSettings;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings", Meta = (ShowOnlyInnerProperties))
+	FGAFInputSettings InputSettings;
 };

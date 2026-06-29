@@ -5,6 +5,7 @@
 #include "Engine/LocalPlayer.h"
 #include "GAFGamePlayTag.h"
 #include "GAFInputBindingHelpers.h"
+#include "GAFInputSettings.h"
 #include "GAFInputConfig.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
@@ -67,8 +68,8 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	// 这样可以让InputAction与角色解耦
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookMouse, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookMouse, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLook, false);
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLook, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookGamepad, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookGamepad, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMove, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMove, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMoveWorldSpace, false);
@@ -80,8 +81,8 @@ void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionVal
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
 
 	// 如果Config无效就回退到默认值
-	const FGAFLookInputSettings DefaultLookSettings;
-	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->LookSettings : DefaultLookSettings };
+	const FGAFInputSettings DefaultLookSettings;
+	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
 	const auto PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
 	const auto YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
 
@@ -89,11 +90,11 @@ void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionVal
 	AddControllerYawInput(Value.X * YawSign * LookSettings.MouseYawSensitivity);
 }
 
-void AGAFCharacterPlayable::Input_OnLook(const FInputActionValue& ActionValue)
+void AGAFCharacterPlayable::Input_OnLookGamepad(const FInputActionValue& ActionValue)
 {
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
-	const FGAFLookInputSettings DefaultLookSettings;
-	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->LookSettings : DefaultLookSettings };
+	const FGAFInputSettings DefaultLookSettings;
+	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
 	const auto PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
 	const auto YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
 
@@ -135,4 +136,28 @@ void AGAFCharacterPlayable::Input_OnMoveWorldSpace(const FInputActionValue& Acti
 	// 直接加世界方向的输入
 	AddMovementInput(FVector::RightVector, Value.X);
 	AddMovementInput(FVector::ForwardVector, Value.Y);
+}
+
+void AGAFCharacterPlayable::Input_OnWalk(const FInputActionValue& ActionValue)
+{
+}
+
+void AGAFCharacterPlayable::Input_OnSprint(const FInputActionValue& ActionValue)
+{
+}
+
+void AGAFCharacterPlayable::Input_OnCrouch(const FInputActionValue& ActionValue)
+{
+}
+
+void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
+{
+}
+
+void AGAFCharacterPlayable::Input_OnAim(const FInputActionValue& ActionValue)
+{
+}
+
+void AGAFCharacterPlayable::Input_OnChangeRotationMode(const FInputActionValue& ActionValue)
+{
 }
