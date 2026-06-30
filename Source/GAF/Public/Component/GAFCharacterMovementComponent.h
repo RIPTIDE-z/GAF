@@ -34,7 +34,7 @@ protected:
 	// 如果有其他系统要操作角色移动，屏蔽输入
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	uint8 bInputBlocked = false;
-	
+
 	// 输入状态允许的最大Gait
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	FGameplayTag MaxAllowedGait;

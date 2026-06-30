@@ -24,7 +24,7 @@ public:
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Input")
 	TObjectPtr<const UGAFInputConfig> InputConfig;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
@@ -40,24 +40,24 @@ protected:
 	virtual void Input_OnMoveWorldSpace(const FInputActionValue& ActionValue);
 	virtual void Input_OnLookGamepad(const FInputActionValue& ActionValue);
 	virtual void Input_OnLookMouse(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnWalkPressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnWalkReleased(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnSprintPressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnSprintReleased(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnCrouchPressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnCrouchReleased(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnAimPressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnAimReleased(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnChangeRotationModePressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnChangeRotationModeReleased(const FInputActionValue& ActionValue);
-	
+
 	virtual void Input_OnJump(const FInputActionValue& ActionValue);
-	
+
 protected:
 	// 获取默认角色配置
 	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;

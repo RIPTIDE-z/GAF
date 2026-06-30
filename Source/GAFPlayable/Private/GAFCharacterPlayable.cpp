@@ -96,19 +96,19 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Started, this, &ThisClass::Input_OnWalkPressed, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Completed, this, &ThisClass::Input_OnWalkReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Canceled, this, &ThisClass::Input_OnWalkReleased, false);
-	
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Started, this, &ThisClass::Input_OnSprintPressed, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Completed, this, &ThisClass::Input_OnSprintReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Canceled, this, &ThisClass::Input_OnSprintReleased, false);
-	
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Started, this, &ThisClass::Input_OnCrouchPressed, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Completed, this, &ThisClass::Input_OnCrouchReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Canceled, this, &ThisClass::Input_OnCrouchReleased, false);
-	
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Started, this, &ThisClass::Input_OnAimPressed, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Completed, this, &ThisClass::Input_OnAimReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Canceled, this, &ThisClass::Input_OnAimReleased, false);
-	
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Started, this, &ThisClass::Input_OnChangeRotationModePressed, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Completed, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Canceled, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
@@ -199,7 +199,7 @@ void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
 		MoveInputLength = 0.0f;
 		return;
 	}
-	
+
 	// 设置遥感推动幅度
 	MoveInputLength = Value.Length();
 	Value.Normalize();

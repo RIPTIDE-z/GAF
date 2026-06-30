@@ -33,12 +33,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	FGameplayTag InputTag;
-	
+
 	// None: 普通输入，比如 Move / Look
 	// Hold: 按住生效，松开取消，比如按住 Sprint
 	// Toggle: 按一下切换开关，比如按一下切换为 Walk
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	EGAFInputStateActivationMode StateActivationMode{EGAFInputStateActivationMode::None};
+	EGAFInputStateActivationMode StateActivationMode{ EGAFInputStateActivationMode::None };
 
 	// 这个输入动作要修改的角色输入状态，比如 GAF.InputState.WantsToRun
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input State", Meta = (Categories = "InputState"))
@@ -58,9 +58,9 @@ public:
 
 	// 返回原Action
 	const UInputAction* FindNativeInputActionForTag(const FGameplayTag& InputTag, bool bLogNotFound = true) const;
-	
+
 	const FGAFInputAction* FindAbilityGAFInputActionForTag(const FGameplayTag& InputTag, bool bLogNotFound = true) const;
-	
+
 	const UInputAction* FindAbilityInputActionForTag(const FGameplayTag& InputTag, bool bLogNotFound = true) const;
 
 public:

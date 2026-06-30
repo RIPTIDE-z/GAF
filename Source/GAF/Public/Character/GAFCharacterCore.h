@@ -10,8 +10,8 @@ class UGAFCharacterMovementComponent;
 class UMotionWarpingComponent;
 
 UCLASS()
-class GAF_API AGAFCharacterCore : 
-	public ACharacter, 
+class GAF_API AGAFCharacterCore :
+	public ACharacter,
 	public IGAFCharacterDataProvider,
 	public IGAFLocomotionIntentProvider
 {
@@ -33,7 +33,7 @@ public:
 	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const override;
 	virtual bool GetCameraFrameData(FGAFCameraFrameData& OutData) const override;
 	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
-	
+
 	// CMC数据传递
 	virtual bool GetLocomotionIntent(FGAFLocomotionIntent& OutIntent) const override;
 
@@ -44,9 +44,9 @@ public:
 	// 切换输入Tag
 	UFUNCTION(BlueprintCallable)
 	void ToggleInputStateTag(FGameplayTag Tag);
-	
+
 	bool HasInputStateTag(FGameplayTag Tag) const;
-	
+
 	// 计算当前输入状态下允许的最“大”Gait
 	FGameplayTag CalculateMaxAllowedGait() const;
 
@@ -65,15 +65,14 @@ public:
 	UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 
 protected:
-	
 	// 输入Tag集合
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Input")
 	FGameplayTagContainer InputStateTags;
-	
+
 	// 摇杆推动幅度，0 ~ 1，1 表示满输入
 	UPROPERTY(Transient, BlueprintReadOnly, Transient)
-	float MoveInputLength{ForceInit};
+	float MoveInputLength{ ForceInit };
 
 	UPROPERTY(Transient, BlueprintReadOnly, Transient)
-	float MoveWorldSpaceInputLength{ForceInit};
+	float MoveWorldSpaceInputLength{ ForceInit };
 };

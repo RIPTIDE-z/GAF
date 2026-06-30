@@ -26,19 +26,19 @@ struct GAF_API FGAFAnimationFrameData
 	FGameplayTag Gait;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector Velocity{ForceInit};
+	FVector Velocity{ ForceInit };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector InputAcceleration;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FTransform ActorTransform {FTransform::Identity};
+	FTransform ActorTransform{ FTransform::Identity };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentMaxAcceleration{0.0f};
+	float CurrentMaxAcceleration{ 0.0f };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentMaxDeceleration{0.0f};
+	float CurrentMaxDeceleration{ 0.0f };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FRotator OrientationIntent;
@@ -80,11 +80,11 @@ struct FGAFLocomotionIntent
 	FGameplayTag MaxAllowedGait;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bUseControllerDesiredRotation{false};
+	bool bUseControllerDesiredRotation{ false };
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bOrientRotationToMovement{true};
+	bool bOrientRotationToMovement{ true };
 
 	UPROPERTY(BlueprintReadOnly)
-	FRotator RotationRate{0.0f, -1.0f, 0.0f};
+	FRotator RotationRate{ 0.0f, -1.0f, 0.0f };
 };

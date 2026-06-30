@@ -68,7 +68,6 @@ void UGAFCharacterMovementComponent::PhysicsRotation(float DeltaTime)
 
 void UGAFCharacterMovementComponent::PhysWalking(float DeltaTime, int32 IterationsCount)
 {
-	
-	Super::PhysWalking(DeltaTime, IterationsCount);
 
+	Super::PhysWalking(DeltaTime, IterationsCount);
 }
