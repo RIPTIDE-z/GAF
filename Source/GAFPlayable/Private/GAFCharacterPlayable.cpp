@@ -27,7 +27,7 @@ void AGAFCharacterPlayable::PostInitializeComponents()
 	const UGAFCharacterSettings& Settings = GetDefaultCharacterSettings();
 
 	// 若默认Strafe则加入Tag
-	SetInputStateTag(GAFGamePlayTags::InputState_WantsToStrafe, Settings.MovementSettings.bDefaultStrafe != 0);
+	SetInputStateTag(GAFGamePlayTags::InputState_WantsToStrafe, Settings.MovementSettings.DefaultStrafe != 0);
 
 	// 初始化CMC运动参数
 	InitCharacterMovementSettings(GAFCharacterMovement, Settings.MovementSettings);
@@ -302,10 +302,10 @@ void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementC
 	}
 
 	CMC->MaxAcceleration = Settings.MaxAcceleration;
-	CMC->bUseSeparateBrakingFriction = Settings.bUseSeparateBrakingFriction != 0;
+	CMC->bUseSeparateBrakingFriction = Settings.UseSeparateBrakingFriction != 0;
 	CMC->BrakingDecelerationWalking = Settings.BrakingDecelerationWalking;
 	CMC->BrakingFriction = Settings.BrakingFriction;
 	CMC->BrakingFrictionFactor = Settings.BrakingFrictionFactor;
-	CMC->bUseControllerDesiredRotation = Settings.bUseControllerDesiredRotation != 0;
-	CMC->bOrientRotationToMovement = Settings.bOrientRotationToMovement != 0;
+	CMC->bUseControllerDesiredRotation = Settings.UseControllerDesiredRotation != 0;
+	CMC->bOrientRotationToMovement = Settings.OrientRotationToMovement != 0;
 }

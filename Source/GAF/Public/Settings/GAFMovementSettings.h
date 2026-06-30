@@ -10,22 +10,22 @@ struct GAF_API FGAFMovementSettings
 	TObjectPtr<UCurveFloat> StrafeSpeedMapCurve;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Speed")
-	FVector WalkSpeeds;
+	FVector WalkSpeeds{200.0, 180.0, 150.0};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Speed")
-	FVector RunSpeeds;
+	FVector RunSpeeds{500.0, 350.0, 300.0};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Speed")
-	FVector SprintSpeeds;
+	FVector SprintSpeeds{700.0, 700.0, 700.0};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Speed")
-	FVector CrouchSpeeds;
+	FVector CrouchSpeeds{225.0, 200.0, 180.0};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxAcceleration{500.f};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Braking")
-	uint8 bUseSeparateBrakingFriction{true};
+	bool UseSeparateBrakingFriction{true};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Braking")
 	float BrakingDecelerationWalking{440.f};
@@ -37,11 +37,11 @@ struct GAF_API FGAFMovementSettings
 	float BrakingFrictionFactor{1.f};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
-	uint8 bUseControllerDesiredRotation {false};
+	bool UseControllerDesiredRotation{false};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
-	uint8 bOrientRotationToMovement {false};
+	bool OrientRotationToMovement{false};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
-	uint8 bDefaultStrafe{true};
+	bool DefaultStrafe{true};
 };
