@@ -10,5 +10,4 @@ UCLASS()
 class GAF_API UGAFAnimationInstance : public UAnimInstance
 {
 	GENERATED_BODY()
-
 };

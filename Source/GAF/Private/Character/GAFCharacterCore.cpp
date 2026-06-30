@@ -31,3 +31,40 @@ void AGAFCharacterCore::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
+
+void AGAFCharacterCore::SetInputStateTag(FGameplayTag Tag, bool bActive)
+{
+	if (!Tag.IsValid())
+	{
+		return;
+	}
+
+	if (bActive)
+	{
+		InputStateTags.AddTag(Tag);
+	}
+	else
+	{
+		InputStateTags.RemoveTag(Tag);
+	}
+}
+
+bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) const
+{
+	return false;
+}
+
+bool AGAFCharacterCore::GetCameraFrameData(FGAFCameraFrameData& OutData) const
+{
+	return false;
+}
+
+bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) const
+{
+	return false;
+}
+
+void AGAFCharacterCore::BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const
+{
+	
+}

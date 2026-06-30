@@ -1,23 +1,27 @@
 #pragma once
-#include "GameplayTagContainer.h"
 
-#include "GAFAnimationTypes.generated.h"
+#include "GameplayTagContainer.h"
 #include "GAFCharacterMovementComponent.h"
+#include "GAFAnimationTypes.generated.h"
 
 USTRUCT(BlueprintType)
 struct GAF_API FGAFAnimationFrameData
 {
 	GENERATED_BODY()
 
+	// 输入状态
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FGameplayTagContainer InputStateTags;
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly)
 	FGameplayTag MovementMode;
-	
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly)
 	FGameplayTag Stance;
-	
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly)
 	FGameplayTag RotationMode;
-	
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly)
 	FGameplayTag Gait;
 
@@ -29,25 +33,39 @@ struct GAF_API FGAFAnimationFrameData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FTransform ActorTransform = FTransform::Identity;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float CurrentMaxAcceleration;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float CurrentMaxDeceleration;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FRotator OrientationIntent;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FRotator AimingRotation;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool JustLanded;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector LandVelocity;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector GroundNormal;
+};
+
+// TODO: 摄像机
+USTRUCT(BlueprintType)
+struct GAF_API FGAFCameraFrameData
+{
+	GENERATED_BODY()
+};
+
+// TODO: 翻越系统
+USTRUCT(BlueprintType)
+struct GAF_API FGAFTraversalFrameData
+{
+	GENERATED_BODY()
 };

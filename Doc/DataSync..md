@@ -1,0 +1,13 @@
+角色与动画蓝图的数据传递，尽可能仿照GASP中通过蓝图接口传递的方式
+
+接口写为IGAFCharacterDataProvider
+
+含有三个数据获取函数
+
+具体数据结构则由GAFAnimationTypes决定
+
+同时把一些状态类枚举转为GamePlayTags，比如InputState转为TagContainer
+
+CharacterCore再继承接口并实现GetAnimationData
+
+其中GetAnimationData与BuildAnimationData分开，方便子类覆写
