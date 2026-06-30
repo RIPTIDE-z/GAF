@@ -16,6 +16,8 @@
 
 AGAFCharacterPlayable::AGAFCharacterPlayable()
 {
+	// 默认Strafe
+	InputStateTags.AddTag(GAFGamePlayTags::InputState_WantsToStrafe);
 }
 
 // Update input mapping when the pawn changes controller
@@ -68,12 +70,82 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	// 这样可以让InputAction与角色解耦
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookMouse, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Mouse, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookMouse, false);
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Triggered, this, &ThisClass::Input_OnLookGamepad, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Look_Gamepad, ETriggerEvent::Canceled, this, &ThisClass::Input_OnLookGamepad, false);
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMove, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMove, false);
+
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Triggered, this, &ThisClass::Input_OnMoveWorldSpace, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Move_WorldSpace, ETriggerEvent::Canceled, this, &ThisClass::Input_OnMoveWorldSpace, false);
+
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Started, this, &ThisClass::Input_OnWalkPressed, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Completed, this, &ThisClass::Input_OnWalkReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Walk, ETriggerEvent::Canceled, this, &ThisClass::Input_OnWalkReleased, false);
+	
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Started, this, &ThisClass::Input_OnSprintPressed, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Completed, this, &ThisClass::Input_OnSprintReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Sprint, ETriggerEvent::Canceled, this, &ThisClass::Input_OnSprintReleased, false);
+	
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Started, this, &ThisClass::Input_OnCrouchPressed, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Completed, this, &ThisClass::Input_OnCrouchReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Crouch, ETriggerEvent::Canceled, this, &ThisClass::Input_OnCrouchReleased, false);
+	
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Started, this, &ThisClass::Input_OnAimPressed, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Completed, this, &ThisClass::Input_OnAimReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Aim, ETriggerEvent::Canceled, this, &ThisClass::Input_OnAimReleased, false);
+	
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Started, this, &ThisClass::Input_OnChangeRotationModePressed, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Completed, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Canceled, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
+
+	// TODO: Jump
+}
+
+void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
+{
+	// 有效性检查
+	const FGAFInputAction* ActionConfig =
+		IsValid(InputConfig) ? InputConfig->FindNativeGAFInputActionForTag(InputTag, false) : nullptr;
+
+	if (!ActionConfig || !ActionConfig->InputStateTag.IsValid())
+	{
+		return;
+	}
+
+	switch (ActionConfig->StateActivationMode)
+	{
+		// 按住触发就激活状态
+		case EGAFInputStateActivationMode::Hold:
+			SetInputStateTag(ActionConfig->InputStateTag, true);
+			break;
+
+		// 切换触发取反状态
+		case EGAFInputStateActivationMode::Toggle:
+			ToggleInputStateTag(ActionConfig->InputStateTag);
+			break;
+
+		default:
+			break;
+	}
+}
+
+void AGAFCharacterPlayable::HandleInputReleased(FGameplayTag InputTag)
+{
+	const FGAFInputAction* ActionConfig =
+		IsValid(InputConfig) ? InputConfig->FindNativeGAFInputActionForTag(InputTag, false) : nullptr;
+
+	if (!ActionConfig || !ActionConfig->InputStateTag.IsValid())
+	{
+		return;
+	}
+
+	// 如果是按住触发那么就取消状态
+	if (ActionConfig->StateActivationMode == EGAFInputStateActivationMode::Hold)
+	{
+		SetInputStateTag(ActionConfig->InputStateTag, false);
+	}
 }
 
 void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionValue)
@@ -81,10 +153,11 @@ void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionVal
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
 
 	// 如果Config无效就回退到默认值
-	const FGAFInputSettings DefaultLookSettings;
-	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
-	const auto PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
-	const auto YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
+	// 同时默认Settings设为static，只初始化一次
+	static const FGAFInputSettings DefaultLookSettings;
+	const FGAFInputSettings& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
+	const float PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
+	const float YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
 
 	AddControllerPitchInput(Value.Y * PitchSign * LookSettings.MousePitchSensitivity);
 	AddControllerYawInput(Value.X * YawSign * LookSettings.MouseYawSensitivity);
@@ -93,10 +166,11 @@ void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionVal
 void AGAFCharacterPlayable::Input_OnLookGamepad(const FInputActionValue& ActionValue)
 {
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
-	const FGAFInputSettings DefaultLookSettings;
-	const auto& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
-	const auto PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
-	const auto YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
+
+	static const FGAFInputSettings DefaultLookSettings;
+	const FGAFInputSettings& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
+	const float PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
+	const float YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
 
 	AddControllerPitchInput(Value.Y * PitchSign * LookSettings.GamepadPitchRate);
 	AddControllerYawInput(Value.X * YawSign * LookSettings.GamepadYawRate);
@@ -138,26 +212,57 @@ void AGAFCharacterPlayable::Input_OnMoveWorldSpace(const FInputActionValue& Acti
 	AddMovementInput(FVector::ForwardVector, Value.Y);
 }
 
-void AGAFCharacterPlayable::Input_OnWalk(const FInputActionValue& ActionValue)
+void AGAFCharacterPlayable::Input_OnWalkPressed(const FInputActionValue& ActionValue)
 {
+	HandleInputPressed(GAFGamePlayTags::InputTag_Walk);
 }
 
-void AGAFCharacterPlayable::Input_OnSprint(const FInputActionValue& ActionValue)
+void AGAFCharacterPlayable::Input_OnWalkReleased(const FInputActionValue& ActionValue)
 {
+	HandleInputReleased(GAFGamePlayTags::InputTag_Walk);
 }
 
-void AGAFCharacterPlayable::Input_OnCrouch(const FInputActionValue& ActionValue)
+void AGAFCharacterPlayable::Input_OnSprintPressed(const FInputActionValue& ActionValue)
 {
+	HandleInputPressed(GAFGamePlayTags::InputTag_Sprint);
 }
 
+void AGAFCharacterPlayable::Input_OnSprintReleased(const FInputActionValue& ActionValue)
+{
+	HandleInputReleased(GAFGamePlayTags::InputTag_Sprint);
+}
+
+void AGAFCharacterPlayable::Input_OnCrouchPressed(const FInputActionValue& ActionValue)
+{
+	HandleInputPressed(GAFGamePlayTags::InputTag_Crouch);
+}
+
+void AGAFCharacterPlayable::Input_OnCrouchReleased(const FInputActionValue& ActionValue)
+{
+	HandleInputReleased(GAFGamePlayTags::InputTag_Crouch);
+}
+
+void AGAFCharacterPlayable::Input_OnAimPressed(const FInputActionValue& ActionValue)
+{
+	HandleInputPressed(GAFGamePlayTags::InputTag_Aim);
+}
+
+void AGAFCharacterPlayable::Input_OnAimReleased(const FInputActionValue& ActionValue)
+{
+	HandleInputReleased(GAFGamePlayTags::InputTag_Aim);
+}
+
+void AGAFCharacterPlayable::Input_OnChangeRotationModePressed(const FInputActionValue& ActionValue)
+{
+	HandleInputPressed(GAFGamePlayTags::InputTag_ChangeRotationMode);
+}
+
+void AGAFCharacterPlayable::Input_OnChangeRotationModeReleased(const FInputActionValue& ActionValue)
+{
+	HandleInputReleased(GAFGamePlayTags::InputTag_ChangeRotationMode);
+}
+
+// TODO: Jump
 void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
-{
-}
-
-void AGAFCharacterPlayable::Input_OnAim(const FInputActionValue& ActionValue)
-{
-}
-
-void AGAFCharacterPlayable::Input_OnChangeRotationMode(const FInputActionValue& ActionValue)
 {
 }

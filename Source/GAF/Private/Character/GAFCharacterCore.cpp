@@ -1,6 +1,8 @@
 #include "Character/GAFCharacterCore.h"
 
-#include "GAFCharacterMovementComponent.h"
+#include "Component/GAFCharacterMovementComponent.h"
+#include "MotionWarpingComponent.h"
+#include "GAFGamePlayTag.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterCore)
 
@@ -15,6 +17,8 @@ AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer
 	PrimaryActorTick.bCanEverTick = true;
 
 	GAFCharacterMovement = Cast<UGAFCharacterMovementComponent>(GetCharacterMovement());
+	
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AGAFCharacterCore::BeginPlay()
@@ -49,6 +53,23 @@ void AGAFCharacterCore::SetInputStateTag(FGameplayTag Tag, bool bActive)
 	}
 }
 
+void AGAFCharacterCore::ToggleInputStateTag(FGameplayTag Tag)
+{
+	if (!Tag.IsValid())
+	{
+		return;
+	}
+
+	if (InputStateTags.HasTagExact(Tag))
+	{
+		InputStateTags.RemoveTag(Tag);
+	}
+	else
+	{
+		InputStateTags.AddTag(Tag);
+	}
+}
+
 bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) const
 {
 	return false;
@@ -66,5 +87,26 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 
 void AGAFCharacterCore::BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const
 {
-	
+}
+
+bool AGAFCharacterCore::HasInputStateTag(FGameplayTag Tag) const
+{
+	return Tag.IsValid() && InputStateTags.HasTagExact(Tag);
+}
+
+FGameplayTag AGAFCharacterCore::CalculateMaxAllowedGait() const
+{
+	// 如果有冲刺状态则优先冲刺
+	if (HasInputStateTag(GAFGamePlayTags::InputState_WantsToSprint))
+	{
+		return GAFGamePlayTags::Gait_Sprint;
+	}
+
+	if (HasInputStateTag(GAFGamePlayTags::InputState_WantsToWalk))
+	{
+		return GAFGamePlayTags::Gait_Walk;
+	}
+
+	// 默认Run
+	return GAFGamePlayTags::Gait_Run;
 }

@@ -11,6 +11,7 @@ public class GAFPlayable : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"GameplayTags",
 			"GAF",
 			"GAFInput"
 		});

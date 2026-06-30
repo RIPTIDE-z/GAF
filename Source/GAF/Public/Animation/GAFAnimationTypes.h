@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GameplayTagContainer.h"
-#include "GAFCharacterMovementComponent.h"
+#include "Component/GAFCharacterMovementComponent.h"
 #include "GAFAnimationTypes.generated.h"
 
 USTRUCT(BlueprintType)

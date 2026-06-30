@@ -13,6 +13,7 @@ public class GAF : ModuleRules
 				"Engine",
 				"GameplayTags",
 				"AnimGraphRuntime",
+				"MotionWarping"
 			}
 		);
 

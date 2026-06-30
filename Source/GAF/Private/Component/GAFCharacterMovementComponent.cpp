@@ -1,11 +1,9 @@
-#include "GAFCharacterMovementComponent.h"
+#include "Component/GAFCharacterMovementComponent.h"
 
 #include "Character/GAFCharacterCore.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Curves/CurveVector.h"
-#include "Engine/World.h"
-#include "GameFramework/Controller.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterMovementComponent)
 

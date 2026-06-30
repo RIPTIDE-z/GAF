@@ -1,6 +1,7 @@
 #pragma once
 
-#include "GAFMovementSettings.h"
+#include "Component/GAFCharacterMovementComponent.h"
+#include "Settings/GAFMovementSettings.h"
 #include "Engine/DataAsset.h"
 
 #include "GAFCharacterSettings.generated.h"
@@ -12,7 +13,7 @@ class GAF_API UGAFCharacterSettings : public UDataAsset
 
 public:
 	UGAFCharacterSettings(const FObjectInitializer& ObjectInitializer);
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
 	FGAFMovementSettings MovementSettings;
 };

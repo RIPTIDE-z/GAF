@@ -7,6 +7,7 @@
 #include "GAFCharacterCore.generated.h"
 
 class UGAFCharacterMovementComponent;
+class UMotionWarpingComponent;
 
 UCLASS()
 class GAF_API AGAFCharacterCore : public ACharacter, public IGAFCharacterDataProvider
@@ -30,20 +31,42 @@ public:
 	virtual bool GetCameraFrameData(FGAFCameraFrameData& OutData) const override;
 	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
 
-	// 增删输入Tag
-	UFUNCTION(BlueprintCallable, Category = "GAF|Input")
+	// 根据传入的bActive修改输入Tag
+	UFUNCTION(BlueprintCallable)
 	void SetInputStateTag(FGameplayTag Tag, bool bActive);
+
+	// 切换输入Tag
+	UFUNCTION(BlueprintCallable)
+	void ToggleInputStateTag(FGameplayTag Tag);
+	
+	bool HasInputStateTag(FGameplayTag Tag) const;
+	
+	// 计算当前输入状态下允许的最“大”Gait
+	FGameplayTag CalculateMaxAllowedGait() const;
 
 protected:
 	virtual void BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const;
-	
+
 protected:
 	// 带有自定义逻辑的 CMC
-	UPROPERTY(BlueprintReadOnly, Category = "GAF|Character")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UGAFCharacterMovementComponent> GAFCharacterMovement;
 
-	// 输入状态
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Character")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent;
+
+public:
+	UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
+
+protected:
+	
+	// 输入Tag集合
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Input")
 	FGameplayTagContainer InputStateTags;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Movement")
+	bool JustLanded;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Movement")
+	FVector LandVelocity;
 };
