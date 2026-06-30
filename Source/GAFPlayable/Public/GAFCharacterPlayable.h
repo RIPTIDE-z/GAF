@@ -29,6 +29,8 @@ public:
 	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
 protected:
+	// 组件和蓝图默认值初始化后再应用配置，避免构造CDO时读取空DataAsset。
+	virtual void PostInitializeComponents() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
 	virtual void HandleInputPressed(FGameplayTag InputTag);
 	virtual void HandleInputReleased(FGameplayTag InputTag);

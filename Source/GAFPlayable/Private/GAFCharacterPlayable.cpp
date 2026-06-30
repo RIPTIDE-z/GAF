@@ -16,16 +16,21 @@
 
 AGAFCharacterPlayable::AGAFCharacterPlayable()
 {
-	const UGAFCharacterSettings& DefaultGAFCharacterSettings = GetDefaultCharacterSettings();
-	
+	// 不在构造函数读取CharacterSettings，CDO构造阶段DataAsset引用可能还没被设置
+}
+
+void AGAFCharacterPlayable::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// 此时组件和蓝图默认值已经初始化，可以安全读取配置资产
+	const UGAFCharacterSettings& Settings = GetDefaultCharacterSettings();
+
 	// 若默认Strafe则加入Tag
-	if (CharacterSettings->MovementSettings.bDefaultStrafe && InputStateTags.HasTagExact(GAFGamePlayTags::InputState_WantsToStrafe))
-	{
-		InputStateTags.AddTag(GAFGamePlayTags::InputState_WantsToStrafe);
-	}
-	
+	SetInputStateTag(GAFGamePlayTags::InputState_WantsToStrafe, Settings.MovementSettings.bDefaultStrafe != 0);
+
 	// 初始化CMC运动参数
-	InitCharacterMovementSettings(GAFCharacterMovement, DefaultGAFCharacterSettings.MovementSettings);
+	InitCharacterMovementSettings(GAFCharacterMovement, Settings.MovementSettings);
 }
 
 // Update input mapping when the pawn changes controller
@@ -282,6 +287,7 @@ void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
 
 const UGAFCharacterSettings& AGAFCharacterPlayable::GetDefaultCharacterSettings() const
 {
+	// 未配置DataAsset时回退到类默认对象，保证调用方总能拿到有效设置。
 	return IsValid(CharacterSettings)
 		? *CharacterSettings
 		: *GetDefault<UGAFCharacterSettings>();
@@ -289,11 +295,17 @@ const UGAFCharacterSettings& AGAFCharacterPlayable::GetDefaultCharacterSettings(
 
 void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings)
 {
+	// 自定义CMC被替换或初始化失败时直接跳过，避免启动阶段空指针崩溃。
+	if (!IsValid(CMC))
+	{
+		return;
+	}
+
 	CMC->MaxAcceleration = Settings.MaxAcceleration;
-	CMC->bUseSeparateBrakingFriction = Settings.bUseSeparateBrakingFriction;
+	CMC->bUseSeparateBrakingFriction = Settings.bUseSeparateBrakingFriction != 0;
 	CMC->BrakingDecelerationWalking = Settings.BrakingDecelerationWalking;
 	CMC->BrakingFriction = Settings.BrakingFriction;
 	CMC->BrakingFrictionFactor = Settings.BrakingFrictionFactor;
-	CMC->bUseControllerDesiredRotation = Settings.bUseControllerDesiredRotation;
-	CMC->bOrientRotationToMovement = Settings.bOrientRotationToMovement;
+	CMC->bUseControllerDesiredRotation = Settings.bUseControllerDesiredRotation != 0;
+	CMC->bOrientRotationToMovement = Settings.bOrientRotationToMovement != 0;
 }

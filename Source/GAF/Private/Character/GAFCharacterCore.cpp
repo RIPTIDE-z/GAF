@@ -19,7 +19,6 @@ AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer
 	GAFCharacterMovement = Cast<UGAFCharacterMovementComponent>(GetCharacterMovement());
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
-	
 }
 
 void AGAFCharacterCore::BeginPlay()
