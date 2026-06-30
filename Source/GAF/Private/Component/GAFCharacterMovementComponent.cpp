@@ -33,9 +33,9 @@ UGAFCharacterMovementComponent::UGAFCharacterMovementComponent()
 
 FVector UGAFCharacterMovementComponent::ConsumeInputVector()
 {
-	auto InputVector{ Super::ConsumeInputVector() };
+	FVector InputVector{ Super::ConsumeInputVector() };
 
-	// Drop input while movement is blocked by another character state
+	// 其他系统接管角色时丢弃输入值
 	if (bInputBlocked)
 	{
 		InputVector = FVector::ZeroVector;
@@ -53,12 +53,22 @@ void UGAFCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frictio
 	Super::CalcVelocity(DeltaTime, Friction, bFluid, BrakingDeceleration);
 }
 
+// 这个函数在 PhysicsRotation PhysWalking 前被调用
+// 所以效果应该与 GASP 里 Add Tick Prerequisite 作用一致，都是先更新运动参数
+void UGAFCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+{
+	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+}
+
 void UGAFCharacterMovementComponent::PhysicsRotation(float DeltaTime)
 {
+
 	Super::PhysicsRotation(DeltaTime);
 }
 
 void UGAFCharacterMovementComponent::PhysWalking(float DeltaTime, int32 IterationsCount)
 {
+	
 	Super::PhysWalking(DeltaTime, IterationsCount);
+
 }

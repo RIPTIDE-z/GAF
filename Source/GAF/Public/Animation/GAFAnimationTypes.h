@@ -26,19 +26,19 @@ struct GAF_API FGAFAnimationFrameData
 	FGameplayTag Gait;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector Velocity;
+	FVector Velocity{ForceInit};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector InputAcceleration;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FTransform ActorTransform = FTransform::Identity;
+	FTransform ActorTransform {FTransform::Identity};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentMaxAcceleration;
+	float CurrentMaxAcceleration{0.0f};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentMaxDeceleration;
+	float CurrentMaxDeceleration{0.0f};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FRotator OrientationIntent;
@@ -68,4 +68,23 @@ USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversalFrameData
 {
 	GENERATED_BODY()
+};
+
+// 给 CMC 使用的运动数据
+USTRUCT(BlueprintType)
+struct FGAFLocomotionIntent
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayTag MaxAllowedGait;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bUseControllerDesiredRotation{false};
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bOrientRotationToMovement{true};
+
+	UPROPERTY(BlueprintReadOnly)
+	FRotator RotationRate{0.0f, -1.0f, 0.0f};
 };

@@ -10,7 +10,10 @@ class UGAFCharacterMovementComponent;
 class UMotionWarpingComponent;
 
 UCLASS()
-class GAF_API AGAFCharacterCore : public ACharacter, public IGAFCharacterDataProvider
+class GAF_API AGAFCharacterCore : 
+	public ACharacter, 
+	public IGAFCharacterDataProvider,
+	public IGAFLocomotionIntentProvider
 {
 	GENERATED_BODY()
 
@@ -30,6 +33,9 @@ public:
 	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const override;
 	virtual bool GetCameraFrameData(FGAFCameraFrameData& OutData) const override;
 	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
+	
+	// CMC数据传递
+	virtual bool GetLocomotionIntent(FGAFLocomotionIntent& OutIntent) const override;
 
 	// 根据传入的bActive修改输入Tag
 	UFUNCTION(BlueprintCallable)
@@ -63,10 +69,11 @@ protected:
 	// 输入Tag集合
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Input")
 	FGameplayTagContainer InputStateTags;
+	
+	// 摇杆推动幅度，0 ~ 1，1 表示满输入
+	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	float MoveInputLength{ForceInit};
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Movement")
-	bool JustLanded;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Movement")
-	FVector LandVelocity;
+	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	float MoveWorldSpaceInputLength{ForceInit};
 };

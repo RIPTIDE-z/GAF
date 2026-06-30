@@ -19,6 +19,7 @@ AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer
 	GAFCharacterMovement = Cast<UGAFCharacterMovementComponent>(GetCharacterMovement());
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+	
 }
 
 void AGAFCharacterCore::BeginPlay()
@@ -85,6 +86,12 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 	return false;
 }
 
+bool AGAFCharacterCore::GetLocomotionIntent(FGAFLocomotionIntent& OutIntent) const
+{
+	return false;
+}
+
+// 实际获取动画数据，从CMC中直接获取
 void AGAFCharacterCore::BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const
 {
 }

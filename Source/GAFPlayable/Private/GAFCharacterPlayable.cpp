@@ -16,8 +16,16 @@
 
 AGAFCharacterPlayable::AGAFCharacterPlayable()
 {
-	// 默认Strafe
-	InputStateTags.AddTag(GAFGamePlayTags::InputState_WantsToStrafe);
+	const UGAFCharacterSettings& DefaultGAFCharacterSettings = GetDefaultCharacterSettings();
+	
+	// 若默认Strafe则加入Tag
+	if (CharacterSettings->MovementSettings.bDefaultStrafe && InputStateTags.HasTagExact(GAFGamePlayTags::InputState_WantsToStrafe))
+	{
+		InputStateTags.AddTag(GAFGamePlayTags::InputState_WantsToStrafe);
+	}
+	
+	// 初始化CMC运动参数
+	InitCharacterMovementSettings(GAFCharacterMovement, DefaultGAFCharacterSettings.MovementSettings);
 }
 
 // Update input mapping when the pawn changes controller
@@ -183,12 +191,15 @@ void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
 	FVector2D Value{ ActionValue.Get<FVector2D>() };
 	if (Value.IsNearlyZero())
 	{
+		MoveInputLength = 0.0f;
 		return;
 	}
-
+	
+	// 设置遥感推动幅度
+	MoveInputLength = Value.Length();
 	Value.Normalize();
 
-	const auto ControlRotation{ GetControlRotation() };
+	const FRotator ControlRotation{ GetControlRotation() };
 	const FRotator YawRotation{ 0.0, ControlRotation.Yaw, 0.0 };
 	const auto ForwardDirection{ FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X) };
 	const auto RightDirection{ FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y) };
@@ -202,9 +213,11 @@ void AGAFCharacterPlayable::Input_OnMoveWorldSpace(const FInputActionValue& Acti
 	FVector2D Value{ ActionValue.Get<FVector2D>() };
 	if (Value.IsNearlyZero())
 	{
+		MoveWorldSpaceInputLength = 0.0f;
 		return;
 	}
 
+	MoveWorldSpaceInputLength = Value.Length();
 	Value.Normalize();
 
 	// 直接加世界方向的输入
@@ -265,4 +278,22 @@ void AGAFCharacterPlayable::Input_OnChangeRotationModeReleased(const FInputActio
 // TODO: Jump
 void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
 {
+}
+
+const UGAFCharacterSettings& AGAFCharacterPlayable::GetDefaultCharacterSettings() const
+{
+	return IsValid(CharacterSettings)
+		? *CharacterSettings
+		: *GetDefault<UGAFCharacterSettings>();
+}
+
+void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings)
+{
+	CMC->MaxAcceleration = Settings.MaxAcceleration;
+	CMC->bUseSeparateBrakingFriction = Settings.bUseSeparateBrakingFriction;
+	CMC->BrakingDecelerationWalking = Settings.BrakingDecelerationWalking;
+	CMC->BrakingFriction = Settings.BrakingFriction;
+	CMC->BrakingFrictionFactor = Settings.BrakingFrictionFactor;
+	CMC->bUseControllerDesiredRotation = Settings.bUseControllerDesiredRotation;
+	CMC->bOrientRotationToMovement = Settings.bOrientRotationToMovement;
 }

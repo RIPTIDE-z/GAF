@@ -25,7 +25,7 @@ struct GAF_API FGAFMovementSettings
 	float MaxAcceleration{500.f};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Braking")
-	bool UseSeperateBrakingFriction{true};
+	uint8 bUseSeparateBrakingFriction{true};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Braking")
 	float BrakingDecelerationWalking{440.f};
@@ -35,4 +35,13 @@ struct GAF_API FGAFMovementSettings
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Braking")
 	float BrakingFrictionFactor{1.f};
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
+	uint8 bUseControllerDesiredRotation {false};
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
+	uint8 bOrientRotationToMovement {false};
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
+	uint8 bDefaultStrafe{true};
 };

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Character/GAFCharacterCore.h"
+#include "Settings/GAFCharacterSettings.h"
+#include "Settings/GAFMovementSettings.h"
 #include "GAFCharacterPlayable.generated.h"
 
 struct FInputActionValue;
@@ -22,6 +24,9 @@ public:
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Input")
 	TObjectPtr<const UGAFInputConfig> InputConfig;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
+	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
@@ -50,4 +55,9 @@ protected:
 	virtual void Input_OnChangeRotationModeReleased(const FInputActionValue& ActionValue);
 	
 	virtual void Input_OnJump(const FInputActionValue& ActionValue);
+	
+protected:
+	// 获取默认角色配置
+	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;
+	void InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings);
 };
