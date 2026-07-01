@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GAFGamePlayTag.h"
 #include "GameFramework/Character.h"
 #include "Animation/GAFCharacterDataProvider.h"
 #include "Animation/GAFAnimationTypes.h"
@@ -24,6 +25,9 @@ public:
 
 	// 处理输入系统
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	// CMC获取
+	UGAFCharacterMovementComponent* GetGAFCharacterMovement() const{return GAFCharacterMovement;}
 
 	// 获取动画所需数据的接口
 	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const override;
@@ -48,6 +52,8 @@ public:
 
 protected:
 	virtual void BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const;
+	
+	bool CanSprint() const;
 
 protected:
 	// 带有自定义逻辑的 CMC
@@ -71,4 +77,8 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Transient)
 	float MoveWorldSpaceInputLength{ ForceInit };
+	
+	// 允许 Sprint 时移动方向和角色朝向的夹角阈值
+	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	float SprintAngleThreshold{ 50.0f };
 };
