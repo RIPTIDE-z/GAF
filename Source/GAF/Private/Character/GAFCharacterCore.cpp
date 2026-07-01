@@ -185,7 +185,7 @@ bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
 	// 2.3 Braking Deceleration
 	// TODO: 参数化加进 MovementSettings
 	// 有输入时快速刹车提高响应度，无输入时慢速刹车
-	const bool bHasMovementInputVector = !GetPendingMovementInputVector().IsNearlyZero();
+	const bool bHasMovementInputVector = !GetLastMovementInputVector().IsNearlyZero();
 	if (bHasMovementInputVector)
 	{
 		OutData.BrakingDecelerationWalking = 500.0f;
@@ -287,9 +287,12 @@ bool AGAFCharacterCore::CanSprint() const
 	// 玩家的运动意图方向
 	// 本地角色使用输入方向
 	// 远端角色则使用 CMC 的加速度方向
+	// 且需要注意的是这里需要使用 GetLastMovementInputVector
+	// 因为这里是在CMC内部获取输入，在这之前CMC会消耗InputVector
+	// Pending 会始终为0
 	const FVector MovementIntent =
 		IsLocallyControlled()
-		? GetPendingMovementInputVector()
+		? GetLastMovementInputVector()
 		: Movement->GetCurrentAcceleration();
 
 	if (MovementIntent.IsNearlyZero())
@@ -348,7 +351,7 @@ void AGAFCharacterCore::InitCharacterMovementSettings(
 float AGAFCharacterCore::CalculateDirectionAmount(const UCharacterMovementComponent& CMC) const
 {
 	FVector MovementIntent = IsLocallyControlled()
-		? GetPendingMovementInputVector()
+		? GetLastMovementInputVector()
 		: CMC.GetCurrentAcceleration();
 
 	// 没有明确输入或加速度时，用当前速度方向兜底
