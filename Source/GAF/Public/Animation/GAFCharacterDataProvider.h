@@ -23,16 +23,16 @@ public:
 };
 
 UINTERFACE(MinimalAPI, meta = (CannotImplementInterfaceInBlueprint))
-class UGAFLocomotionIntentProvider : public UInterface
+class UGAFMovementDataProvider : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class GAF_API IGAFLocomotionIntentProvider
+class GAF_API IGAFMovementDataProvider
 {
 	GENERATED_BODY()
 
 public:
 	// CMC数据获取接口
-	virtual bool GetLocomotionIntent(FGAFLocomotionIntent& OutIntent) const = 0;
+	virtual bool GetMovementData(FGAFMovementData& OutData) const = 0;
 };

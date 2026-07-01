@@ -37,11 +37,5 @@ struct GAF_API FGAFMovementSettings
 	float BrakingFrictionFactor{ 1.f };
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
-	bool UseControllerDesiredRotation{ false };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
-	bool OrientRotationToMovement{ false };
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Rotation")
 	bool DefaultStrafe{ true };
 };

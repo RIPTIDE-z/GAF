@@ -72,7 +72,7 @@ struct GAF_API FGAFTraversalFrameData
 
 // 给 CMC 使用的运动数据
 USTRUCT(BlueprintType)
-struct FGAFLocomotionIntent
+struct FGAFMovementData
 {
 	GENERATED_BODY()
 
@@ -80,10 +80,10 @@ struct FGAFLocomotionIntent
 	FGameplayTag MaxAllowedGait;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bUseControllerDesiredRotation{ false };
+	bool bUseControllerDesiredRotation{ true };
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bOrientRotationToMovement{ true };
+	bool bOrientRotationToMovement{ false };
 
 	UPROPERTY(BlueprintReadOnly)
 	FRotator RotationRate{ 0.0f, -1.0f, 0.0f };

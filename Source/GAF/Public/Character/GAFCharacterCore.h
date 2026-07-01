@@ -13,7 +13,7 @@ UCLASS()
 class GAF_API AGAFCharacterCore :
 	public ACharacter,
 	public IGAFCharacterDataProvider,
-	public IGAFLocomotionIntentProvider
+	public IGAFMovementDataProvider
 {
 	GENERATED_BODY()
 
@@ -35,7 +35,7 @@ public:
 	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
 
 	// CMC数据传递
-	virtual bool GetLocomotionIntent(FGAFLocomotionIntent& OutIntent) const override;
+	virtual bool GetMovementData(FGAFMovementData& OutIntent) const override;
 
 	// 根据传入的bActive修改输入Tag
 	UFUNCTION(BlueprintCallable)

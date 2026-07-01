@@ -306,6 +306,4 @@ void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementC
 	CMC->BrakingDecelerationWalking = Settings.BrakingDecelerationWalking;
 	CMC->BrakingFriction = Settings.BrakingFriction;
 	CMC->BrakingFrictionFactor = Settings.BrakingFrictionFactor;
-	CMC->bUseControllerDesiredRotation = Settings.UseControllerDesiredRotation != 0;
-	CMC->bOrientRotationToMovement = Settings.OrientRotationToMovement != 0;
 }
