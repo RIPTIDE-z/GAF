@@ -9,26 +9,6 @@
 
 UGAFCharacterMovementComponent::UGAFCharacterMovementComponent()
 {
-	// Default values for standing walking movement
-
-	MinAnalogWalkSpeed = 25.0f;
-	MaxWalkSpeed = 375.0f;
-	MaxWalkSpeedCrouched = 150.0f;
-	MaxAccelerationWalking = 2000.0f;
-	BrakingDecelerationWalking = 1500.0f;
-	GroundFriction = 4.0f;
-
-	// Use GroundFriction and FallingLateralFriction for both acceleration and deceleration
-	bUseSeparateBrakingFriction = false;
-
-	// Keep braking friction disabled by default except for short landing windows
-	BrakingFrictionFactor = 0.0f;
-
-	// Prevent the movement component from driving actor rotation
-
-	RotationRate = FRotator::ZeroRotator;
-	bUseControllerDesiredRotation = false;
-	bOrientRotationToMovement = false;
 }
 
 FVector UGAFCharacterMovementComponent::ConsumeInputVector()
@@ -55,19 +35,43 @@ void UGAFCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frictio
 
 // 这个函数在 PhysicsRotation PhysWalking 前被调用
 // 所以效果应该与 GASP 里 Add Tick Prerequisite 作用一致，都是先更新运动参数
+// 获取参数后缓存下来，在PhysicsRotation/Walking里再分别应用移动/旋转的参数
 void UGAFCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
+	CachedLocomotionData = FGAFLocomotionData{};
+
+	const IGAFLocomotionDataProvider* Provider =
+		Cast<IGAFLocomotionDataProvider>(CharacterOwner);
+	
+	// 调用接口函数获取数据并存入缓存
+	const bool bHasData = Provider && Provider->GetLocomotionData(CachedLocomotionData);
+	
+	// 数据无效
+	// TODO:考虑使用上一帧数据而不是直接用默认值
+	if (!bHasData)
+	{
+		CachedLocomotionData = FGAFLocomotionData{};
+	}
+	
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 
 void UGAFCharacterMovementComponent::PhysicsRotation(float DeltaTime)
 {
+	bUseControllerDesiredRotation = CachedLocomotionData.bUseControllerDesiredRotation;
+	bOrientRotationToMovement = CachedLocomotionData.bOrientRotationToMovement;
+	RotationRate = CachedLocomotionData.RotationRate;
 
 	Super::PhysicsRotation(DeltaTime);
 }
 
 void UGAFCharacterMovementComponent::PhysWalking(float DeltaTime, int32 IterationsCount)
 {
+	MaxAcceleration = CachedLocomotionData.MaxAcceleration;
+	BrakingDecelerationWalking = CachedLocomotionData.BrakingDecelerationWalking;
+	GroundFriction = CachedLocomotionData.GroundFriction;
+	MaxWalkSpeed = CachedLocomotionData.MaxWalkSpeed;
+	MaxWalkSpeedCrouched = CachedLocomotionData.MaxWalkSpeedCrouched;
 
 	Super::PhysWalking(DeltaTime, IterationsCount);
 }

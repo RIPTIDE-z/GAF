@@ -7,6 +7,7 @@
 #include "GAFInputBindingHelpers.h"
 #include "GAFInputSettings.h"
 #include "GAFInputConfig.h"
+#include "GAFPlayableLogChannels.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -76,6 +77,7 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	UEnhancedInputComponent* EnhancedInput{ Cast<UEnhancedInputComponent>(Input) };
 	if (!IsValid(EnhancedInput))
 	{
+		UE_LOG(LogGAFPlayable, Warning,TEXT("%s failed to SetupPlayerInputComponent: EnhancedInputComponent is invalid."),*GetNameSafe(this));
 		return;
 	}
 
@@ -118,12 +120,39 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 
 void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
 {
-	// 有效性检查
-	const FGAFInputAction* ActionConfig =
-		IsValid(InputConfig) ? InputConfig->FindNativeGAFInputActionForTag(InputTag, false) : nullptr;
-
-	if (!ActionConfig || !ActionConfig->InputStateTag.IsValid())
+	// 各类有效性检查
+	if (!IsValid(InputConfig))
 	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input [%s]: InputConfig is invalid."),
+			*GetNameSafe(this),
+			*InputTag.ToString());
+
+		return;
+	}
+
+	const FGAFInputAction* ActionConfig =
+		InputConfig->FindNativeGAFInputActionForTag(InputTag, false);
+
+	if (!ActionConfig)
+	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input [%s]: no native input action config found in [%s]."),
+			*GetNameSafe(this),
+			*InputTag.ToString(),
+			*GetNameSafe(InputConfig));
+
+		return;
+	}
+
+	if (!ActionConfig->InputStateTag.IsValid())
+	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input [%s]: action [%s] has no valid InputStateTag."),
+			*GetNameSafe(this),
+			*InputTag.ToString(),
+			*GetNameSafe(ActionConfig->InputAction));
+
 		return;
 	}
 
@@ -146,11 +175,38 @@ void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
 
 void AGAFCharacterPlayable::HandleInputReleased(FGameplayTag InputTag)
 {
-	const FGAFInputAction* ActionConfig =
-		IsValid(InputConfig) ? InputConfig->FindNativeGAFInputActionForTag(InputTag, false) : nullptr;
-
-	if (!ActionConfig || !ActionConfig->InputStateTag.IsValid())
+	if (!IsValid(InputConfig))
 	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input release [%s]: InputConfig is invalid."),
+			*GetNameSafe(this),
+			*InputTag.ToString());
+
+		return;
+	}
+
+	const FGAFInputAction* ActionConfig =
+		InputConfig->FindNativeGAFInputActionForTag(InputTag, false);
+
+	if (!ActionConfig)
+	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input release [%s]: no native input action config found in [%s]."),
+			*GetNameSafe(this),
+			*InputTag.ToString(),
+			*GetNameSafe(InputConfig));
+
+		return;
+	}
+
+	if (!ActionConfig->InputStateTag.IsValid())
+	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle input release [%s]: action [%s] has no valid InputStateTag."),
+			*GetNameSafe(this),
+			*InputTag.ToString(),
+			*GetNameSafe(ActionConfig->InputAction));
+
 		return;
 	}
 
@@ -298,6 +354,7 @@ void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementC
 	// 自定义CMC被替换或初始化失败时直接跳过，避免启动阶段空指针崩溃。
 	if (!IsValid(CMC))
 	{
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s's CMC is Invalid, InitCharacterMovementSettings will be skipped."),*GetNameSafe(this));
 		return;
 	}
 

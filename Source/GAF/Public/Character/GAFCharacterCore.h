@@ -13,17 +13,13 @@ UCLASS()
 class GAF_API AGAFCharacterCore :
 	public ACharacter,
 	public IGAFCharacterDataProvider,
-	public IGAFMovementDataProvider
+	public IGAFLocomotionDataProvider
 {
 	GENERATED_BODY()
 
 public:
 	explicit AGAFCharacterCore(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
-
-protected:
 	virtual void BeginPlay() override;
-
-public:
 	virtual void Tick(float DeltaTime) override;
 
 	// 处理输入系统
@@ -35,7 +31,7 @@ public:
 	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
 
 	// CMC数据传递
-	virtual bool GetMovementData(FGAFMovementData& OutIntent) const override;
+	virtual bool GetLocomotionData(FGAFLocomotionData& OutData) const override;
 
 	// 根据传入的bActive修改输入Tag
 	UFUNCTION(BlueprintCallable)

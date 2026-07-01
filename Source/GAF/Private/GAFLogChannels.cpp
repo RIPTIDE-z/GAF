@@ -1,4 +1,5 @@
 #include "GAFLogChannels.h"
-#include "GameFramework/Actor.h"
 
 DEFINE_LOG_CATEGORY(LogGAFCore);
+DEFINE_LOG_CATEGORY(LogGAFMovement);
+DEFINE_LOG_CATEGORY(LogGAFAnimation);

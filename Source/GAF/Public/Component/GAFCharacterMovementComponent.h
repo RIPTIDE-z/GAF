@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Animation/GAFCharacterDataProvider.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
 
@@ -34,10 +35,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	uint8 bInputBlocked = false;
 
-	// 输入状态允许的最大Gait，本质上不是 “ 真实 ” Gait
-	// 但是 GASP 将 Walk/Run/Sprint 的过渡动画与 Loop 放在一起
-	// 比如 Sprint to Run 位于 Run_Loop PSD
-	// 这样不需要角色真正切换了步态也可以切换 Gait 数据库，不需要额外的 Actual Gait
+	
+	
+	// 缓存的运动数据
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
-	FGameplayTag MaxAllowedGait;
+	FGAFLocomotionData CachedLocomotionData;
 };

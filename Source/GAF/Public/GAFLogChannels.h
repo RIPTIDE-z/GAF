@@ -1,0 +1,7 @@
+#pragma once
+
+#include "Logging/LogMacros.h"
+
+GAF_API DECLARE_LOG_CATEGORY_EXTERN(LogGAFCore, Log, All);
+GAF_API DECLARE_LOG_CATEGORY_EXTERN(LogGAFMovement, Log, All);
+GAF_API DECLARE_LOG_CATEGORY_EXTERN(LogGAFAnimation, Log, All);

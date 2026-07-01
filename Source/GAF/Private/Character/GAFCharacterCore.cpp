@@ -1,5 +1,6 @@
 #include "Character/GAFCharacterCore.h"
 
+#include "GAFLogChannels.h"
 #include "Component/GAFCharacterMovementComponent.h"
 #include "MotionWarpingComponent.h"
 #include "GAFGamePlayTag.h"
@@ -40,6 +41,7 @@ void AGAFCharacterCore::SetInputStateTag(FGameplayTag Tag, bool bActive)
 {
 	if (!Tag.IsValid())
 	{
+		UE_LOG(LogGAFCore, Warning, TEXT("Can't SetInputStateTag for Tag [%s] on [%s]."), *Tag.ToString(), *GetNameSafe(this));
 		return;
 	}
 
@@ -57,6 +59,7 @@ void AGAFCharacterCore::ToggleInputStateTag(FGameplayTag Tag)
 {
 	if (!Tag.IsValid())
 	{
+		UE_LOG(LogGAFCore, Warning, TEXT("Can't ToggleInputStateTag for Tag [%s] on [%s]."), *Tag.ToString(), *GetNameSafe(this));
 		return;
 	}
 
@@ -85,9 +88,19 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 	return false;
 }
 
-bool AGAFCharacterCore::GetMovementData(FGAFMovementData& OutIntent) const
+bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
 {
-	return false;
+	// 1. Update Rotation
+	// 1.1 Orient Intent
+	// 1.2 Rotation Rate
+	// 2. Update Movement
+	// 2.1 Gait
+	// 2.2 Max Acceleration
+	// 2.3 Braking Deceleration
+	// 2.4 Ground Friction
+	// 2.5 Max Walk Speed
+	// 2.6 Max Walk Speed Crouched
+	return true;
 }
 
 // 实际获取动画数据，从CMC中直接获取
