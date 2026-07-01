@@ -1,6 +1,10 @@
 #pragma once
 
+#include "CoreMinimal.h"
+
 #include "GAFMovementSettings.generated.h"
+
+class UCurveFloat;
 
 USTRUCT(BlueprintType)
 struct GAF_API FGAFMovementSettings

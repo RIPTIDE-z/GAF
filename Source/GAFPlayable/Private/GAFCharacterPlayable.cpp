@@ -17,21 +17,6 @@
 
 AGAFCharacterPlayable::AGAFCharacterPlayable()
 {
-	// 不在构造函数读取CharacterSettings，CDO构造阶段DataAsset引用可能还没被设置
-}
-
-void AGAFCharacterPlayable::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-	// 此时组件和蓝图默认值已经初始化，可以安全读取配置资产
-	const UGAFCharacterSettings& Settings = GetDefaultCharacterSettings();
-
-	// 若默认Strafe则加入Tag
-	SetInputStateTag(GAFGamePlayTags::InputState_WantsToStrafe, Settings.MovementSettings.DefaultStrafe != 0);
-
-	// 初始化CMC运动参数
-	InitCharacterMovementSettings(GAFCharacterMovement, Settings.MovementSettings);
 }
 
 // Update input mapping when the pawn changes controller
@@ -341,26 +326,3 @@ void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
 {
 }
 
-const UGAFCharacterSettings& AGAFCharacterPlayable::GetDefaultCharacterSettings() const
-{
-	// 未配置DataAsset时回退到类默认对象，保证调用方总能拿到有效设置。
-	return IsValid(CharacterSettings)
-		? *CharacterSettings
-		: *GetDefault<UGAFCharacterSettings>();
-}
-
-void AGAFCharacterPlayable::InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings)
-{
-	// 自定义CMC被替换或初始化失败时直接跳过，避免启动阶段空指针崩溃。
-	if (!IsValid(CMC))
-	{
-		UE_LOG(LogGAFPlayable, Warning, TEXT("%s's CMC is Invalid, InitCharacterMovementSettings will be skipped."),*GetNameSafe(this));
-		return;
-	}
-
-	CMC->MaxAcceleration = Settings.MaxAcceleration;
-	CMC->bUseSeparateBrakingFriction = Settings.UseSeparateBrakingFriction != 0;
-	CMC->BrakingDecelerationWalking = Settings.BrakingDecelerationWalking;
-	CMC->BrakingFriction = Settings.BrakingFriction;
-	CMC->BrakingFrictionFactor = Settings.BrakingFrictionFactor;
-}

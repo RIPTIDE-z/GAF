@@ -5,10 +5,12 @@
 #include "GameFramework/Character.h"
 #include "Animation/GAFCharacterDataProvider.h"
 #include "Animation/GAFAnimationTypes.h"
+#include "Settings/GAFCharacterSettings.h"
 #include "GAFCharacterCore.generated.h"
 
 class UGAFCharacterMovementComponent;
 class UMotionWarpingComponent;
+class UCharacterMovementComponent;
 
 UCLASS()
 class GAF_API AGAFCharacterCore :
@@ -20,14 +22,18 @@ class GAF_API AGAFCharacterCore :
 
 public:
 	explicit AGAFCharacterCore(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	// 处理输入系统
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+
 	// CMC获取
-	UGAFCharacterMovementComponent* GetGAFCharacterMovement() const{return GAFCharacterMovement;}
+	UGAFCharacterMovementComponent* GetGAFCharacterMovement() const { return GAFCharacterMovement; }
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
+	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
 	// 获取动画所需数据的接口
 	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const override;
@@ -52,8 +58,16 @@ public:
 
 protected:
 	virtual void BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const;
-	
+
 	bool CanSprint() const;
+	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;
+	void InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings) const;
+
+	// 计算移动方向在速度配置中的位置：0 = 前进，1 = 横移，2 = 后退。
+	float CalculateDirectionAmount(const UCharacterMovementComponent& CMC) const;
+
+	// 根据方向位置在 Forward / Strafe / Backward 三个速度之间插值。
+	float CalculateDirectionDependentSpeed(const FVector& Speeds, float DirectionAmount) const;
 
 protected:
 	// 带有自定义逻辑的 CMC
@@ -77,7 +91,7 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Transient)
 	float MoveWorldSpaceInputLength{ ForceInit };
-	
+
 	// 允许 Sprint 时移动方向和角色朝向的夹角阈值
 	UPROPERTY(Transient, BlueprintReadOnly, Transient)
 	float SprintAngleThreshold{ 50.0f };

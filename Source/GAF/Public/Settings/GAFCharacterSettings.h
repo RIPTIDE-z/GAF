@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Component/GAFCharacterMovementComponent.h"
 #include "Settings/GAFMovementSettings.h"
 #include "Engine/DataAsset.h"
 
