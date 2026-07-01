@@ -91,7 +91,12 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
 {
 	// 1. Update Rotation
+
 	// 1.1 Orient Intent
+	bool bWantAim =
+		HasInputStateTag(GAFGamePlayTags::InputState_WantsToAim)
+		|| HasInputStateTag(GAFGamePlayTags::InputState_WantsToSprint);
+
 	// 1.2 Rotation Rate
 	// 2. Update Movement
 	// 2.1 Gait

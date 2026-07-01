@@ -20,7 +20,7 @@ public:
 
 public:
 	virtual void PhysicsRotation(float DeltaTime) override;
-	
+
 	// 在 PhsicsRotation 和 PhysWalking 前被调用
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 
@@ -35,8 +35,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	uint8 bInputBlocked = false;
 
-	
-	
 	// 缓存的运动数据
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", Transient)
 	FGAFLocomotionData CachedLocomotionData;

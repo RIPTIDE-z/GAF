@@ -42,17 +42,17 @@ void UGAFCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float De
 
 	const IGAFLocomotionDataProvider* Provider =
 		Cast<IGAFLocomotionDataProvider>(CharacterOwner);
-	
+
 	// 调用接口函数获取数据并存入缓存
 	const bool bHasData = Provider && Provider->GetLocomotionData(CachedLocomotionData);
-	
+
 	// 数据无效
 	// TODO:考虑使用上一帧数据而不是直接用默认值
 	if (!bHasData)
 	{
 		CachedLocomotionData = FGAFLocomotionData{};
 	}
-	
+
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 

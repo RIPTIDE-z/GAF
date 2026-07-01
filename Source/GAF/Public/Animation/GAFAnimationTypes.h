@@ -74,21 +74,21 @@ USTRUCT(BlueprintType)
 struct FGAFLocomotionData
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY(BlueprintReadOnly)
-	float MaxAcceleration{0.0f};
-	
+	float MaxAcceleration{ 0.0f };
+
 	UPROPERTY(BlueprintReadOnly)
-	float BrakingDecelerationWalking{0.0f};
-	
+	float BrakingDecelerationWalking{ 0.0f };
+
 	UPROPERTY(BlueprintReadOnly)
-	float GroundFriction{0.0f};
-	
+	float GroundFriction{ 0.0f };
+
 	UPROPERTY(BlueprintReadOnly)
-	float MaxWalkSpeed{0.0f};
-	
+	float MaxWalkSpeed{ 0.0f };
+
 	UPROPERTY(BlueprintReadOnly)
-	float MaxWalkSpeedCrouched{0.0f};
+	float MaxWalkSpeedCrouched{ 0.0f };
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bUseControllerDesiredRotation{ true };
