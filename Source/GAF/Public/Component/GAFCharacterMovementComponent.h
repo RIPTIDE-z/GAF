@@ -2,7 +2,6 @@
 
 #include "Animation/GAFCharacterDataProvider.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameplayTagContainer.h"
 
 #include "GAFCharacterMovementComponent.generated.h"
 

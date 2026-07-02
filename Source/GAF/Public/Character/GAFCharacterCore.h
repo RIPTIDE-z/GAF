@@ -60,8 +60,6 @@ public:
 	FGameplayTag CalculateMaxAllowedGait() const;
 
 protected:
-	virtual void BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const;
-
 	bool CanSprint() const;
 	void RefreshCrouchFromInputState();
 	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;
@@ -91,13 +89,13 @@ protected:
 	FGameplayTagContainer InputStateTags;
 
 	// 摇杆推动幅度，0 ~ 1，1 表示满输入
-	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient)
 	float MoveInputLength{ ForceInit };
 
-	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient)
 	float MoveWorldSpaceInputLength{ ForceInit };
 
 	// 允许 Sprint 时移动方向和角色朝向的夹角阈值
-	UPROPERTY(Transient, BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient)
 	float SprintAngleThreshold{ 50.0f };
 };

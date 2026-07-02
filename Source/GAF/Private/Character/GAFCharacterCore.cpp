@@ -105,7 +105,57 @@ bool AGAFCharacterCore::GetCameraFrameData(FGAFCameraFrameData& OutData) const
 
 bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) const
 {
-	return false;
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	if (!IsValid(Capsule))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Get Traversal Frame Data failed, Capsule is invalid on [%s]."), *GetNameSafe(this));
+		return false;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!IsValid(MeshComponent))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Get Traversal Frame Data failed, Mesh is invalid on [%s]."), *GetNameSafe(this));
+		return false;
+	}
+
+	UMotionWarpingComponent* MotionWarping = GetMotionWarpingComponent();
+	if (!IsValid(MotionWarping))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Get Traversal Frame Data failed, MotionWarpingComponent is invalid on [%s]."), *GetNameSafe(this));
+		return false;
+	}
+
+	UCharacterMovementComponent* CMC = GetCharacterMovement();
+	if (!IsValid(CMC))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Get Traversal Frame Data failed, CMC is invalid on [%s]."), *GetNameSafe(this));
+		return false;
+	}
+
+	OutData.Capsule = Capsule;
+	OutData.Mesh = MeshComponent;
+	OutData.MotionWarping = MotionWarping;
+	OutData.Speed = CMC->Velocity.Size2D();
+	
+	// TODO:这里基于现有方案进行了一次重复的Gait计算，应该想办法与CMC的更新结合减少计算次数
+	OutData.Gait = CalculateMaxAllowedGait();
+
+	// 只有 Falling Swimming 判定为在空中
+	switch (CMC->MovementMode)
+	{
+		case EMovementMode::MOVE_Falling:
+			OutData.MovementMode = GAFGamePlayTags::MovementMode_InAir;
+			break;
+		case EMovementMode::MOVE_Swimming:
+			OutData.MovementMode = GAFGamePlayTags::MovementMode_InAir;
+			break;
+		default:
+			OutData.MovementMode = GAFGamePlayTags::MovementMode_OnGround;
+			break;
+	}
+
+	return true;
 }
 
 bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
@@ -258,11 +308,6 @@ bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
 	OutData.MaxWalkSpeedCrouched = CalculateDirectionDependentSpeed(MovementSettings.CrouchSpeeds, DirectionAmount);
 
 	return true;
-}
-
-// 实际获取动画数据，从CMC中直接获取
-void AGAFCharacterCore::BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const
-{
 }
 
 // 判断是否允许冲刺

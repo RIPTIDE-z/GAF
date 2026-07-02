@@ -1,6 +1,9 @@
 #pragma once
 
 #include "GameplayTagContainer.h"
+#include "MotionWarpingComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GAFAnimationTypes.generated.h"
 
 USTRUCT(BlueprintType)
@@ -67,6 +70,27 @@ USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversalFrameData
 {
 	GENERATED_BODY()
+
+	// 角色胶囊体
+	UPROPERTY(BlueprintReadOnly)
+	UCapsuleComponent* Capsule;
+
+	// 角色网格体组件
+	UPROPERTY(BlueprintReadOnly)
+	USkeletalMeshComponent* Mesh;
+
+	// MotionWarping组件
+	UPROPERTY(BlueprintReadOnly)
+	UMotionWarpingComponent* MotionWarping;
+
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayTag MovementMode;
+
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayTag Gait;
+
+	UPROPERTY(BlueprintReadOnly)
+	float Speed{ 0.0f };
 };
 
 // 给 CMC 使用的运动数据，包含移动和旋转

@@ -18,9 +18,7 @@ bool UGAFTraversalComponent::TryTraversalAction(
 	const EGAFTraversalDebugType DebugType,
 	FGAFTraversalCheckResult& OutResult)
 {
-	(void)Inputs;
-	(void)DebugType;
-
+	// 存放检测结果
 	OutResult = FGAFTraversalCheckResult{};
 
 	const ACharacter* Character = GetOwnerCharacter();

@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Animation/GAFCharacterDataProvider.h"
+
 #include "GAFTraversalComponent.generated.h"
 
 class ACharacter;
@@ -159,14 +161,23 @@ public:
 		EGAFTraversalDebugType DebugType,
 		FGAFTraversalCheckResult& OutResult);
 
-	// Debug绘制时间
+	// Debug绘制等级
+	// TODO: 提升为控制台变量
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
-	float DebugDrawTime{ 1.5f };
+	int DebugDrawLevel{ 1 };
+
+	// Debug绘制时间
+	// TODO: 提升为控制台变量
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
+	float DebugDrawDuration{ 1.5f };
 
 protected:
 	ACharacter* GetOwnerCharacter() const;
 
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bDoingTraversalAction{ false };
+
+	// 缓存的运动数据
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+	FGAFTraversalFrameData CachedTraversalData;
 };
