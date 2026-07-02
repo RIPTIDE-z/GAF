@@ -31,7 +31,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<const UInputAction> InputAction = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (Categories = "GAF.InputTag"))
 	FGameplayTag InputTag;
 
 	// None: 普通输入，比如 Move / Look
@@ -41,7 +41,7 @@ public:
 	EGAFInputStateActivationMode StateActivationMode{ EGAFInputStateActivationMode::None };
 
 	// 这个输入动作要修改的角色输入状态，比如 GAF.InputState.WantsToRun
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input State", Meta = (Categories = "InputState"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input State", meta = (Categories = "GAF.InputState"))
 	FGameplayTag InputStateTag;
 };
 
