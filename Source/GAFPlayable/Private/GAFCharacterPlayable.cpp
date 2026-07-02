@@ -210,24 +210,27 @@ void AGAFCharacterPlayable::Input_OnLookMouse(const FInputActionValue& ActionVal
 	// 同时默认Settings设为static，只初始化一次
 	static const FGAFInputSettings DefaultLookSettings;
 	const FGAFInputSettings& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
-	const float PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
-	const float YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
+	const float PitchSign{ LookSettings.bInvertPitchMouse ? -1.0f : 1.0f };
+	const float YawSign{ LookSettings.bInvertYawMouse ? -1.0f : 1.0f };
 
 	AddControllerPitchInput(Value.Y * PitchSign * LookSettings.MousePitchSensitivity);
 	AddControllerYawInput(Value.X * YawSign * LookSettings.MouseYawSensitivity);
 }
 
+// 手柄额外需要DeltaSeconds处理
 void AGAFCharacterPlayable::Input_OnLookGamepad(const FInputActionValue& ActionValue)
 {
 	const FVector2D Value{ ActionValue.Get<FVector2D>() };
 
 	static const FGAFInputSettings DefaultLookSettings;
 	const FGAFInputSettings& LookSettings{ IsValid(InputConfig) ? InputConfig->InputSettings : DefaultLookSettings };
-	const float PitchSign{ LookSettings.bInvertPitch ? -1.0f : 1.0f };
-	const float YawSign{ LookSettings.bInvertYaw ? -1.0f : 1.0f };
+	const float PitchSign{ LookSettings.bInvertPitchGamepad ? -1.0f : 1.0f };
+	const float YawSign{ LookSettings.bInvertYawGamepad ? -1.0f : 1.0f };
 
-	AddControllerPitchInput(Value.Y * PitchSign * LookSettings.GamepadPitchRate);
-	AddControllerYawInput(Value.X * YawSign * LookSettings.GamepadYawRate);
+	const float DeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f;
+
+	AddControllerPitchInput(Value.Y * PitchSign * LookSettings.GamepadPitchRate * DeltaSeconds);
+	AddControllerYawInput(Value.X * YawSign * LookSettings.GamepadYawRate * DeltaSeconds);
 }
 
 void AGAFCharacterPlayable::Input_OnMove(const FInputActionValue& ActionValue)
