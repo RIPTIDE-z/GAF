@@ -11,6 +11,7 @@ public class GAF : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"DeveloperSettings",
 				"GameplayTags",
 				"AnimGraphRuntime",
 				"MotionWarping"

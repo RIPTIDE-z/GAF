@@ -1,6 +1,7 @@
 #include "Component/GAFTraversalComponent.h"
 
 #include "GAFLogChannels.h"
+#include "Utility/GAFTraversalCollisionResolver.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -42,6 +43,9 @@ bool UGAFTraversalComponent::TryTraversalAction(
 		OutResult.FailureReason = EGAFTraversalFailureReason::AlreadyDoingTraversal;
 		return false;
 	}
+
+	// 从项目设置里解析出使用的 channel
+	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
 
 	// TODO: Traversal 检测、动作类型选择和 Montage 播放逻辑。
 	OutResult.FailureReason = EGAFTraversalFailureReason::TraversalCheckFailed;
