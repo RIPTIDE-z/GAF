@@ -4,6 +4,7 @@
 #include "GAFCharacterPlayable.generated.h"
 
 struct FInputActionValue;
+enum class EGAFTraversalDebugType : uint8;
 class UInputMappingContext;
 class UInputAction;
 class UGAFInputConfig;
@@ -49,5 +50,7 @@ protected:
 	virtual void Input_OnChangeRotationModePressed(const FInputActionValue& ActionValue);
 	virtual void Input_OnChangeRotationModeReleased(const FInputActionValue& ActionValue);
 
-	virtual void Input_OnJump(const FInputActionValue& ActionValue);
+	virtual void Input_OnJumpStarted(const FInputActionValue& ActionValue);
+	virtual void Input_OnJumpTriggered(const FInputActionValue& ActionValue);
+	virtual void Input_OnJumpReleased(const FInputActionValue& ActionValue);
 };

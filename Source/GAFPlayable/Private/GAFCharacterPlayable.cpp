@@ -3,12 +3,14 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Component/GAFTraversalComponent.h"
 #include "GAFGamePlayTag.h"
 #include "GAFInputBindingHelpers.h"
 #include "GAFInputSettings.h"
 #include "GAFInputConfig.h"
 #include "GAFPlayableLogChannels.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "Math/RotationMatrix.h"
@@ -100,7 +102,10 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Completed, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeRotationMode, ETriggerEvent::Canceled, this, &ThisClass::Input_OnChangeRotationModeReleased, false);
 
-	// TODO: Jump
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Started, this, &ThisClass::Input_OnJumpStarted, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Triggered, this, &ThisClass::Input_OnJumpTriggered, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Completed, this, &ThisClass::Input_OnJumpReleased, false);
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Canceled, this, &ThisClass::Input_OnJumpReleased, false);
 }
 
 void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
@@ -326,8 +331,43 @@ void AGAFCharacterPlayable::Input_OnChangeRotationModeReleased(const FInputActio
 	HandleInputReleased(GAFGamePlayTags::InputTag_ChangeRotationMode);
 }
 
-// TODO: Jump
-void AGAFCharacterPlayable::Input_OnJump(const FInputActionValue& ActionValue)
+void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionValue)
 {
+	(void)ActionValue;
+	
+	FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
+
+	// 第一次按下时先尝试 Traversal，Traversal 失败才执行普通 Jump
+	if (!TraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult))
+	{
+		Jump();
+	}
 }
 
+void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& ActionValue)
+{
+	(void)ActionValue;
+
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!IsValid(Movement))
+	{
+		UE_LOG(LogGAFPlayable, Warning,
+			TEXT("%s failed to handle jump triggered: CMC is invalid."),
+			*GetNameSafe(this));
+		return;
+	}
+
+	// 按住时在空中持续检测 Traversal；失败不会触发 Jump
+	if (Movement->IsFalling())
+	{
+		FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
+		TraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult);
+	}
+}
+
+void AGAFCharacterPlayable::Input_OnJumpReleased(const FInputActionValue& ActionValue)
+{
+	(void)ActionValue;
+
+	StopJumping();
+}

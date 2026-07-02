@@ -9,6 +9,7 @@
 #include "GAFCharacterCore.generated.h"
 
 class UGAFCharacterMovementComponent;
+class UGAFTraversalComponent;
 class UMotionWarpingComponent;
 class UCharacterMovementComponent;
 
@@ -29,8 +30,10 @@ public:
 	// 处理输入系统
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// CMC获取
+	// 组件获取
 	UGAFCharacterMovementComponent* GetGAFCharacterMovement() const { return GAFCharacterMovement; }
+	UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
+	UGAFTraversalComponent* GetTraversalComponent() const { return TraversalComponent; }
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
@@ -78,8 +81,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent;
 
-public:
-	UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
+	// 翻越逻辑组件，对应AC_TraversalLogic
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UGAFTraversalComponent> TraversalComponent;
 
 protected:
 	// 输入Tag集合
