@@ -60,6 +60,7 @@ protected:
 	virtual void BuildAnimationFrameData(FGAFAnimationFrameData& OutData) const;
 
 	bool CanSprint() const;
+	void RefreshCrouchFromInputState();
 	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;
 	void InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings) const;
 

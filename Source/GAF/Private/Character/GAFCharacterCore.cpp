@@ -19,6 +19,12 @@ AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer
 	PrimaryActorTick.bCanEverTick = true;
 
 	GAFCharacterMovement = Cast<UGAFCharacterMovementComponent>(GetCharacterMovement());
+	// TODO: Crouch逻辑暂时放在Core
+	if (IsValid(GAFCharacterMovement))
+	{
+		// Crouch() 需要 CMC 允许蹲伏，否则输入状态改变后角色不会真正进入蹲伏状态。
+		GAFCharacterMovement->GetNavAgentPropertiesRef().bCanCrouch = true;
+	}
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
 }
@@ -310,6 +316,36 @@ bool AGAFCharacterCore::CanSprint() const
 
 	// 夹角小于阈值才能移动
 	return DeltaYaw < SprintAngleThreshold;
+}
+
+// TODO: Crouch逻辑暂时放在Core
+void AGAFCharacterCore::RefreshCrouchFromInputState()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!IsValid(Movement))
+	{
+		UE_LOG(LogGAFCore, Warning, TEXT("%s failed to refresh crouch state: CMC is invalid."), *GetNameSafe(this));
+		return;
+	}
+
+	// 下落时不切换蹲伏
+	if (Movement->IsFalling())
+	{
+		return;
+	}
+
+	const bool bWantsToCrouch = HasInputStateTag(GAFGamePlayTags::InputState_WantsToCrouch);
+	if (bWantsToCrouch)
+	{
+		if (!bIsCrouched)
+		{
+			Crouch();
+		}
+	}
+	else if (bIsCrouched)
+	{
+		UnCrouch();
+	}
 }
 
 const UGAFCharacterSettings& AGAFCharacterCore::GetDefaultCharacterSettings() const

@@ -297,11 +297,13 @@ void AGAFCharacterPlayable::Input_OnSprintReleased(const FInputActionValue& Acti
 void AGAFCharacterPlayable::Input_OnCrouchPressed(const FInputActionValue& ActionValue)
 {
 	HandleInputPressed(GAFGamePlayTags::InputTag_Crouch);
+	RefreshCrouchFromInputState();
 }
 
 void AGAFCharacterPlayable::Input_OnCrouchReleased(const FInputActionValue& ActionValue)
 {
 	HandleInputReleased(GAFGamePlayTags::InputTag_Crouch);
+	RefreshCrouchFromInputState();
 }
 
 void AGAFCharacterPlayable::Input_OnAimPressed(const FInputActionValue& ActionValue)
