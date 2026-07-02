@@ -86,8 +86,9 @@ GetWorld()->SweepSingleByChannel(
 
 - `UGAFTraversableLedgeSplineComponent`：实际可编辑的可攀爬边，可在同一个 Actor 上添加多个
 - `UGAFTraversableComponent`：提供 `GetLedgeTransforms()` 查询入口
-	- 内含 TraversableLedgePair 用于配对前后边缘
-	- 使用 FComponentReference 以选择同一个Actor下的组件
+  - 内含 TraversableLedgePair 用于配对前后边缘
+  - 使用 FComponentReference 以选择同一个Actor下的组件，并在运行时通过Resolver解析为指针
+  - 当前会在BeginPlay进行一次整体解析
 
 编辑器配置流程：
 
