@@ -6,6 +6,5 @@
 class GAF_API FGAFTraversalCollisionResolver
 {
 public:
-	static ETraceTypeQuery GetTraversalTraceType();
 	static ECollisionChannel GetTraversalCollisionChannel();
 };

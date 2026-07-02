@@ -5,7 +5,7 @@
 UGAFTraversalSettings::UGAFTraversalSettings()
 {
 	// Visibility兜底
-	TraversableTraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
+	TraversableTraceChannel = ECC_Visibility;
 }
 
 // ProjectSettings中的插件分栏

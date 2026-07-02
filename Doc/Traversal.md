@@ -8,16 +8,13 @@
 - `UGAFTraversalSettings`继承自 UDeveloperSettings 在 Project Settings 中暴露 Traversal 相关插件配置
   - 当前用于选择 Traversal Trace Channel
 - `FGAFTraversalCollisionResolver`
-  - 把 Project Settings 里的 `ETraceTypeQuery` 转成 C++ trace 使用的 `ECollisionChannel`
+  - 从 Project Settings 读取 C++ trace 使用的 `ECollisionChannel`
 
 ## Trace Channel 配置
 
 不硬编码 ECC_GameTraceChannel1，通过 `UGAFTraversalSettings` 暴露配置
 
 - TraversableTraceChannel
-- ExpectedTraceChannelName
-- bDrawDebugTrace
-- bWarnIfUsingFallbackChannel
 
 默认情况下，`TraversableTraceChannel` fallback 到 `Visibility`。这是为了保证插件初次接入时不会崩溃，但正式项目应该创建并选择专用 Trace Channel。
 
@@ -60,23 +57,25 @@ Traversable Trace Channel: Traversable
 
 ## C++ 使用方式
 
-Traversal trace 统一通过 resolver：
+Traversal trace 统一通过 resolver 获取 `ECollisionChannel`：
 
 ```cpp
 const ECollisionChannel Channel =
 	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
 ```
 
-如果使用 `UKismetSystemLibrary::CapsuleTraceSingle()` 这类 Kismet Trace API：
-
-```cpp
-const ETraceTypeQuery TraceType =
-	FGAFTraversalCollisionResolver::GetTraversalTraceType();
-```
-
-如果使用底层 `SweepSingleByChannel()`：
+后续 Traversal 检测建议使用底层 C++ trace，例如：
 
 ```cpp
 const ECollisionChannel Channel =
 	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
+
+GetWorld()->SweepSingleByChannel(
+	Hit,
+	Start,
+	End,
+	FQuat::Identity,
+	Channel,
+	Shape,
+	QueryParams);
 ```

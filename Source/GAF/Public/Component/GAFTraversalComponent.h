@@ -47,7 +47,7 @@ struct GAF_API FGAFTraversalCheckInputs
 	// 障碍物检测的向前方向
 	UPROPERTY(BlueprintReadOnly)
 	FVector TraceForwardDirection{ ForceInit };
-	
+
 	// Trace距离
 	UPROPERTY(BlueprintReadOnly)
 	float TraceForwardDistance{ 0.0f };
@@ -158,6 +158,10 @@ public:
 		const FGAFTraversalCheckInputs& Inputs,
 		EGAFTraversalDebugType DebugType,
 		FGAFTraversalCheckResult& OutResult);
+
+	// Debug绘制时间
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
+	float DebugDrawTime{ 1.5f };
 
 protected:
 	ACharacter* GetOwnerCharacter() const;

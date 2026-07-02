@@ -19,9 +19,5 @@ public:
 	// 实际用于 Traversal 检测的 Channel
 	// 推荐项目创建名为 Traversable 的 Trace Channel，然后在这里选择
 	UPROPERTY(EditAnywhere, Config, BlueprintReadOnly, Category = "Collision")
-	TEnumAsByte<ETraceTypeQuery> TraversableTraceChannel;
-
-	// 仅作为项目接入时的约定名称提示
-	UPROPERTY(EditAnywhere, Config, BlueprintReadOnly, Category = "Collision")
-	FName ExpectedTraceChannelName{ TEXT("Traversable") };
+	TEnumAsByte<ECollisionChannel> TraversableTraceChannel;
 };

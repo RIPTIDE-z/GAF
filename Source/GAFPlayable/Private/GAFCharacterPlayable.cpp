@@ -64,7 +64,7 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	UEnhancedInputComponent* EnhancedInput{ Cast<UEnhancedInputComponent>(Input) };
 	if (!IsValid(EnhancedInput))
 	{
-		UE_LOG(LogGAFPlayable, Warning,TEXT("%s failed to SetupPlayerInputComponent: EnhancedInputComponent is invalid."),*GetNameSafe(this));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to SetupPlayerInputComponent: EnhancedInputComponent is invalid."), *GetNameSafe(this));
 		return;
 	}
 
@@ -113,10 +113,7 @@ void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
 	// 各类有效性检查
 	if (!IsValid(InputConfig))
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input [%s]: InputConfig is invalid."),
-			*GetNameSafe(this),
-			*InputTag.ToString());
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input [%s]: InputConfig is invalid."), *GetNameSafe(this), *InputTag.ToString());
 
 		return;
 	}
@@ -126,22 +123,14 @@ void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
 
 	if (!ActionConfig)
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input [%s]: no native input action config found in [%s]."),
-			*GetNameSafe(this),
-			*InputTag.ToString(),
-			*GetNameSafe(InputConfig));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input [%s]: no native input action config found in [%s]."), *GetNameSafe(this), *InputTag.ToString(), *GetNameSafe(InputConfig));
 
 		return;
 	}
 
 	if (!ActionConfig->InputStateTag.IsValid())
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input [%s]: action [%s] has no valid InputStateTag."),
-			*GetNameSafe(this),
-			*InputTag.ToString(),
-			*GetNameSafe(ActionConfig->InputAction));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input [%s]: action [%s] has no valid InputStateTag."), *GetNameSafe(this), *InputTag.ToString(), *GetNameSafe(ActionConfig->InputAction));
 
 		return;
 	}
@@ -167,10 +156,7 @@ void AGAFCharacterPlayable::HandleInputReleased(FGameplayTag InputTag)
 {
 	if (!IsValid(InputConfig))
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input release [%s]: InputConfig is invalid."),
-			*GetNameSafe(this),
-			*InputTag.ToString());
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input release [%s]: InputConfig is invalid."), *GetNameSafe(this), *InputTag.ToString());
 
 		return;
 	}
@@ -180,22 +166,14 @@ void AGAFCharacterPlayable::HandleInputReleased(FGameplayTag InputTag)
 
 	if (!ActionConfig)
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input release [%s]: no native input action config found in [%s]."),
-			*GetNameSafe(this),
-			*InputTag.ToString(),
-			*GetNameSafe(InputConfig));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input release [%s]: no native input action config found in [%s]."), *GetNameSafe(this), *InputTag.ToString(), *GetNameSafe(InputConfig));
 
 		return;
 	}
 
 	if (!ActionConfig->InputStateTag.IsValid())
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle input release [%s]: action [%s] has no valid InputStateTag."),
-			*GetNameSafe(this),
-			*InputTag.ToString(),
-			*GetNameSafe(ActionConfig->InputAction));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle input release [%s]: action [%s] has no valid InputStateTag."), *GetNameSafe(this), *InputTag.ToString(), *GetNameSafe(ActionConfig->InputAction));
 
 		return;
 	}
@@ -334,7 +312,7 @@ void AGAFCharacterPlayable::Input_OnChangeRotationModeReleased(const FInputActio
 void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionValue)
 {
 	(void)ActionValue;
-	
+
 	FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
 
 	// 第一次按下时先尝试 Traversal，Traversal 失败才执行普通 Jump
@@ -351,9 +329,7 @@ void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& Actio
 	const UCharacterMovementComponent* Movement = GetCharacterMovement();
 	if (!IsValid(Movement))
 	{
-		UE_LOG(LogGAFPlayable, Warning,
-			TEXT("%s failed to handle jump triggered: CMC is invalid."),
-			*GetNameSafe(this));
+		UE_LOG(LogGAFPlayable, Warning, TEXT("%s failed to handle jump triggered: CMC is invalid."), *GetNameSafe(this));
 		return;
 	}
 
