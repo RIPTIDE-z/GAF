@@ -79,3 +79,23 @@ GetWorld()->SweepSingleByChannel(
 	Shape,
 	QueryParams);
 ```
+
+## Traversable Actor
+
+这里对原本GASP的LevelBlock_Traversable进行拓展，“ 可攀爬 ” 功能不依赖特定 Actor 类。任意 Actor 只要添加以下组件即可参与后续 Traversal 检测：
+
+- `UGAFTraversableLedgeSplineComponent`：实际可编辑的可攀爬边，可在同一个 Actor 上添加多个
+- `UGAFTraversableComponent`：提供 `GetLedgeTransforms()` 查询入口
+	- 内含 TraversableLedgePair 用于配对前后边缘
+	- 使用 FComponentReference 以选择同一个Actor下的组件
+
+编辑器配置流程：
+
+```text
+Actor Blueprint
+  Add Component -> GAF Traversable Component
+  Add Component -> GAF Traversable Ledge Spline Component
+  Add Component -> GAF Traversable Ledge Spline Component
+```
+
+在视口中直接编辑每条 `UGAFTraversableLedgeSplineComponent` 的 spline 点。然后在 `UGAFTraversableComponent` 的 `LedgePairs` 中显式配置 Front / Back 对应关系

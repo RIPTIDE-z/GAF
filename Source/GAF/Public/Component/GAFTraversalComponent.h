@@ -34,11 +34,12 @@ UENUM(BlueprintType)
 enum class EGAFTraversalFailureReason : uint8
 {
 	None,
+	InvalidOwner,
+	InvalidMovementComponent,
+	AlreadyDoingTraversal,
+	CantFindTraversableObject,
 	TraversalCheckFailed,
 	MontageSelectionFailed,
-	AlreadyDoingTraversal,
-	InvalidOwner,
-	InvalidMovementComponent
 };
 
 USTRUCT(BlueprintType)
