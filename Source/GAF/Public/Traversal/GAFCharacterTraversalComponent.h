@@ -32,13 +32,13 @@ public:
 		const FGAFMotionMatchingSettings& MotionMatchingSettings,
 		EDrawDebugTrace::Type TraversalDebugType,
 		FGAFTraversalCheckResult& InOutTraversalCheckResult);
-	
+
 	// 真正执行 Traversal
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	bool PerformTraversalAction(
 		FGAFTraversalCheckResult& InOutTraversalResult,
 		const FGAFTraversalSettings& TraversalSettings);
-	
+
 	// 更新用于 MotionWarping 组件的 Warptargets
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	void UpdateWarpTargets(

@@ -21,93 +21,93 @@
 
 namespace
 {
-// 当前使用 Switch 手动对应错误原因，减少反射解析的开销
-// TODO：换成更高效的框架
-const TCHAR* LexToString(const EGAFTraversalFailureReason FailureReason)
-{
-	switch (FailureReason)
+	// 当前使用 Switch 手动对应错误原因，减少反射解析的开销
+	// TODO：换成更高效的框架
+	const TCHAR* LexToString(const EGAFTraversalFailureReason FailureReason)
 	{
-	case EGAFTraversalFailureReason::None:
-		return TEXT("None");
-	case EGAFTraversalFailureReason::InvalidOwner:
-		return TEXT("InvalidOwner");
-	case EGAFTraversalFailureReason::InvalidMovementComponent:
-		return TEXT("InvalidMovementComponent");
-	case EGAFTraversalFailureReason::AlreadyDoingTraversal:
-		return TEXT("AlreadyDoingTraversal");
-	case EGAFTraversalFailureReason::CantFindTraversableObject:
-		return TEXT("CantFindTraversableObject");
-	case EGAFTraversalFailureReason::CantFindFrontLedge:
-		return TEXT("CantFindFrontLedge");
-	case EGAFTraversalFailureReason::NoRoomMoveToFrontLedge:
-		return TEXT("NoRoomMoveToFrontLedge");
-	case EGAFTraversalFailureReason::InvalidAnimInstance:
-		return TEXT("InvalidAnimInstance");
-	case EGAFTraversalFailureReason::InvalidPoseHistory:
-		return TEXT("InvalidPoseHistory");
-	case EGAFTraversalFailureReason::InvalidTraversalChooser:
-		return TEXT("InvalidTraversalChooser");
-	case EGAFTraversalFailureReason::TraversalCheckFailed:
-		return TEXT("TraversalCheckFailed");
-	case EGAFTraversalFailureReason::MontageSelectionFailed:
-		return TEXT("MontageSelectionFailed");
-	case EGAFTraversalFailureReason::InvalidTraversalMesh:
-		return TEXT("InvalidTraversalMesh");
-	case EGAFTraversalFailureReason::InvalidMotionWarpingComponent:
-		return TEXT("InvalidMotionWarpingComponent");
-	case EGAFTraversalFailureReason::InvalidTraversalMontage:
-		return TEXT("InvalidTraversalMontage");
-	case EGAFTraversalFailureReason::InvalidTraversalHitComponent:
-		return TEXT("InvalidTraversalHitComponent");
-	case EGAFTraversalFailureReason::MissingBackLedgeWarpWindow:
-		return TEXT("MissingBackLedgeWarpWindow");
-	case EGAFTraversalFailureReason::MissingBackFloorWarpWindow:
-		return TEXT("MissingBackFloorWarpWindow");
-	case EGAFTraversalFailureReason::MissingDistanceFromLedgeCurve:
-		return TEXT("MissingDistanceFromLedgeCurve");
-	case EGAFTraversalFailureReason::WarpTargetUpdateFailed:
-		return TEXT("WarpTargetUpdateFailed");
-	case EGAFTraversalFailureReason::MontagePlayFailed:
-		return TEXT("MontagePlayFailed");
-	default:
-		return TEXT("Unknown");
-	}
-}
-
-bool TryEvaluateMontageCurveAtTime(
-	const UAnimMontage& Montage,
-	const FName CurveName,
-	const float MontageSampleTime,
-	float& OutCurveValue)
-{
-	if (Montage.SlotAnimTracks.Num() > 0)
-	{
-		const FAnimTrack& AnimTrack = Montage.SlotAnimTracks[0].AnimTrack;
-		if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(MontageSampleTime))
+		switch (FailureReason)
 		{
-			const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
-			if (IsValid(AnimReference) && AnimReference->HasCurveData(CurveName))
-			{
-				float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(MontageSampleTime);
-				AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
-
-				const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
-				OutCurveValue = AnimReference->EvaluateCurveData(CurveName, CurveContext);
-				return true;
-			}
+			case EGAFTraversalFailureReason::None:
+				return TEXT("None");
+			case EGAFTraversalFailureReason::InvalidOwner:
+				return TEXT("InvalidOwner");
+			case EGAFTraversalFailureReason::InvalidMovementComponent:
+				return TEXT("InvalidMovementComponent");
+			case EGAFTraversalFailureReason::AlreadyDoingTraversal:
+				return TEXT("AlreadyDoingTraversal");
+			case EGAFTraversalFailureReason::CantFindTraversableObject:
+				return TEXT("CantFindTraversableObject");
+			case EGAFTraversalFailureReason::CantFindFrontLedge:
+				return TEXT("CantFindFrontLedge");
+			case EGAFTraversalFailureReason::NoRoomMoveToFrontLedge:
+				return TEXT("NoRoomMoveToFrontLedge");
+			case EGAFTraversalFailureReason::InvalidAnimInstance:
+				return TEXT("InvalidAnimInstance");
+			case EGAFTraversalFailureReason::InvalidPoseHistory:
+				return TEXT("InvalidPoseHistory");
+			case EGAFTraversalFailureReason::InvalidTraversalChooser:
+				return TEXT("InvalidTraversalChooser");
+			case EGAFTraversalFailureReason::TraversalCheckFailed:
+				return TEXT("TraversalCheckFailed");
+			case EGAFTraversalFailureReason::MontageSelectionFailed:
+				return TEXT("MontageSelectionFailed");
+			case EGAFTraversalFailureReason::InvalidTraversalMesh:
+				return TEXT("InvalidTraversalMesh");
+			case EGAFTraversalFailureReason::InvalidMotionWarpingComponent:
+				return TEXT("InvalidMotionWarpingComponent");
+			case EGAFTraversalFailureReason::InvalidTraversalMontage:
+				return TEXT("InvalidTraversalMontage");
+			case EGAFTraversalFailureReason::InvalidTraversalHitComponent:
+				return TEXT("InvalidTraversalHitComponent");
+			case EGAFTraversalFailureReason::MissingBackLedgeWarpWindow:
+				return TEXT("MissingBackLedgeWarpWindow");
+			case EGAFTraversalFailureReason::MissingBackFloorWarpWindow:
+				return TEXT("MissingBackFloorWarpWindow");
+			case EGAFTraversalFailureReason::MissingDistanceFromLedgeCurve:
+				return TEXT("MissingDistanceFromLedgeCurve");
+			case EGAFTraversalFailureReason::WarpTargetUpdateFailed:
+				return TEXT("WarpTargetUpdateFailed");
+			case EGAFTraversalFailureReason::MontagePlayFailed:
+				return TEXT("MontagePlayFailed");
+			default:
+				return TEXT("Unknown");
 		}
 	}
 
-	if (Montage.HasCurveData(CurveName))
+	bool TryEvaluateMontageCurveAtTime(
+		const UAnimMontage& Montage,
+		const FName CurveName,
+		const float MontageSampleTime,
+		float& OutCurveValue)
 	{
-		const FAnimExtractContext CurveContext{ static_cast<double>(MontageSampleTime) };
-		OutCurveValue = Montage.EvaluateCurveData(CurveName, CurveContext);
-		return true;
-	}
+		if (Montage.SlotAnimTracks.Num() > 0)
+		{
+			const FAnimTrack& AnimTrack = Montage.SlotAnimTracks[0].AnimTrack;
+			if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(MontageSampleTime))
+			{
+				const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
+				if (IsValid(AnimReference) && AnimReference->HasCurveData(CurveName))
+				{
+					float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(MontageSampleTime);
+					AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
 
-	return false;
-}
-}
+					const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
+					OutCurveValue = AnimReference->EvaluateCurveData(CurveName, CurveContext);
+					return true;
+				}
+			}
+		}
+
+		if (Montage.HasCurveData(CurveName))
+		{
+			const FAnimExtractContext CurveContext{ static_cast<double>(MontageSampleTime) };
+			OutCurveValue = Montage.EvaluateCurveData(CurveName, CurveContext);
+			return true;
+		}
+
+		return false;
+	}
+} // namespace
 
 UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 {
@@ -148,7 +148,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::AlreadyDoingTraversal;
 		return false;
 	}
-	
+
 	// 存放检测结果
 	InOutTraversalCheckResult.Reset();
 
@@ -177,31 +177,31 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	const ETraceTypeQuery& TraceChannel = UEngineTypes::ConvertToTraceType(TraversalTraceChannel);
 	const float& DebugDrawDuration = TraversalSettings.DebugDrawDuration;
 	const int32& DebugDrawLevel = TraversalSettings.DebugDrawLevel;
-	
-	const FVector& TraceOriginOffset =  TraversalCheckInputs.TraceOriginOffset;
-	const FVector& TraceForwardDirection =  TraversalCheckInputs.TraceForwardDirection;
-	const float& TraceForwardDistance =  TraversalCheckInputs.TraceForwardDistance;
-	const FVector& TraceEndOffset =  TraversalCheckInputs.TraceEndOffset;
+
+	const FVector& TraceOriginOffset = TraversalCheckInputs.TraceOriginOffset;
+	const FVector& TraceForwardDirection = TraversalCheckInputs.TraceForwardDirection;
+	const float& TraceForwardDistance = TraversalCheckInputs.TraceForwardDistance;
+	const FVector& TraceEndOffset = TraversalCheckInputs.TraceEndOffset;
 
 	// 忽略自身
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(Character);
-	
+
 	EDrawDebugTrace::Type EffectiveDebugType = DebugDrawLevel >= 2 ? TraversalDebugType : EDrawDebugTrace::None;
 
 	// Step 2.1 : 搜索可翻越物体
 	// 沿角色前方做一次胶囊体 Trace，命中的 Actor 必须挂有且只挂有一个 TraversableLedgeProvider
 	// 找到有效 Provider 后，保存本次命中的 HitComponent，后续 MotionWarping 或播放逻辑可以继续使用
-	
+
 	// 2.1.1 : 起点 = 角色位置 + 起点偏移值
 	const FVector TraceStart = ActorLocation + TraceOriginOffset;
-	
+
 	// 2.1.2 : 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
 	const FVector TraceEnd =
 		TraceStart
 		+ TraceForwardDirection * TraceForwardDistance
 		+ TraceEndOffset;
-	
+
 	// 2.1.3 : 使用 Capsule Trace
 	FHitResult TraversableSearchHitResult;
 	const bool bTraversableSearchHit = UKismetSystemLibrary::CapsuleTraceSingle(
@@ -245,10 +245,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	if (TraversableProviders.Num() > 1)
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
-		UE_LOG(LogGAFTraversal, Warning,
-			TEXT("%s failed to try traversal action: hit actor [%s] has multiple TraversableLedgeProvider components. Only one provider is allowed per traversable actor."),
-			*GetNameSafe(this),
-			*GetNameSafe(HitActor));
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: hit actor [%s] has multiple TraversableLedgeProvider components. Only one provider is allowed per traversable actor."), *GetNameSafe(this), *GetNameSafe(HitActor));
 		return false;
 	}
 
@@ -265,7 +262,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// Provider 会根据命中位置和角色位置，在自己的 LedgePair 中选择 FrontLedge / BackLedge，并写入 CheckResult
 	bool bGetLedge = TraversableProvider->GetLedgeTransforms(TraversableSearchHitResult.ImpactPoint, ActorLocation, InOutTraversalCheckResult);
 	InOutTraversalCheckResult.HitComponent = TraversableSearchHitResult.GetComponent();
-	
+
 	// DEBUG : 绘制 Step 2 找到的前后边缘位置，绿色表示 FrontLedge，蓝色表示 BackLedge。
 	// TODO:提取为单独模块
 	if (TraversalSettings.DebugDrawLevel >= 1)
@@ -313,36 +310,36 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	// Step 3.2 : 检查角色是否有空间移动到 FrontLedge
 	// 从角色当前位置扫到 FrontLedge 前方的胶囊体中心位置，如果中途有阻挡，说明角色不能进入攀爬起点
-	
+
 	// 3.2.1 : 计算角色靠近 FrontLedge 时胶囊体中心应该到达的位置
 	// 位置 = FrontLedge 位置 + 朝向角色侧的法线偏移一个半径 + 向上偏移一个半高
 	// 额外的 2.0f 是安全余量，避免刚好贴边时因为浮点误差被判定为重叠
 	// TODO:这种检查办法应该局限于非常方正的可攀爬物
-	const FVector HasRoomCheckFrontLedgeLocation = 
-		InOutTraversalCheckResult.FrontLedgeLocation 
+	const FVector HasRoomCheckFrontLedgeLocation =
+		InOutTraversalCheckResult.FrontLedgeLocation
 		+ InOutTraversalCheckResult.FrontLedgeNormal * (TraceCapsuleRadius + 2.0f)
-		+ FVector{0.0f, 0.0f, TraceCapsuleHalfHeight + 2.0f};
-	
+		+ FVector{ 0.0f, 0.0f, TraceCapsuleHalfHeight + 2.0f };
+
 	EffectiveDebugType = DebugDrawLevel >= 3 ? TraversalDebugType : EDrawDebugTrace::None;
 
 	// 3.2.2 : 使用胶囊体 Sweep 检查从当前位置到攀爬起点之间是否有阻挡
 	FHitResult HasRoomHitResult;
 	const bool bHasRoomHit = UKismetSystemLibrary::CapsuleTraceSingle(
-	   this,
-	   ActorLocation,
-	   HasRoomCheckFrontLedgeLocation,
-	   TraceCapsuleRadius,
-	   TraceCapsuleHalfHeight,
-	   TraceChannel,
-	   false,
-	   ActorsToIgnore,
-	   EffectiveDebugType,
-	   HasRoomHitResult,
-	   true,
-	   FLinearColor::Black,
-	   FLinearColor::Black,
-	   DebugDrawDuration);
-	
+		this,
+		ActorLocation,
+		HasRoomCheckFrontLedgeLocation,
+		TraceCapsuleRadius,
+		TraceCapsuleHalfHeight,
+		TraceChannel,
+		false,
+		ActorsToIgnore,
+		EffectiveDebugType,
+		HasRoomHitResult,
+		true,
+		FLinearColor::Black,
+		FLinearColor::Black,
+		DebugDrawDuration);
+
 	// 有阻挡物，角色无法攀爬
 	if (HasRoomHitResult.bBlockingHit || HasRoomHitResult.bStartPenetrating)
 	{
@@ -466,10 +463,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	if (!IsValid(AnimInstance) || AnimProvider == nullptr)
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidAnimInstance;
-		UE_LOG(LogGAFTraversal, Warning,
-			TEXT("%s failed to try traversal action: anim instance data provider is invalid on [%s]."),
-			*GetNameSafe(this),
-			*GetNameSafe(Character));
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: anim instance data provider is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
 		return false;
 	}
 
@@ -494,10 +488,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	if (!IsValid(TraversalMontageChooser))
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidTraversalChooser;
-		UE_LOG(LogGAFTraversal, Warning,
-			TEXT("%s failed to try traversal action: traversal montage chooser is invalid on [%s]."),
-			*GetNameSafe(this),
-			*GetNameSafe(Character));
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: traversal montage chooser is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
 		return false;
 	}
 
@@ -505,11 +496,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	if (!AnimProvider->GetTraversalPoseHistoryReference(MotionMatchingSettings.TraversalPoseHistoryTag, PoseHistory))
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidPoseHistory;
-		UE_LOG(LogGAFTraversal, Warning,
-			TEXT("%s failed to try traversal action: pose history [%s] is invalid on [%s]."),
-			*GetNameSafe(this),
-			*MotionMatchingSettings.TraversalPoseHistoryTag.ToString(),
-			*GetNameSafe(Character));
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: pose history [%s] is invalid on [%s]."), *GetNameSafe(this), *MotionMatchingSettings.TraversalPoseHistoryTag.ToString(), *GetNameSafe(Character));
 		return false;
 	}
 
@@ -552,8 +539,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		ChooserContext,
 		TraversalMontageChooser,
 		FObjectChooserBase::FObjectChooserIteratorCallback::CreateLambda(
-			[&ResultObject](UObject* InResultObject)
-			{
+			[&ResultObject](UObject* InResultObject) {
 				ResultObject = InResultObject;
 				return FObjectChooserBase::EIteratorStatus::Stop;
 			}));
@@ -592,7 +578,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// DEBUG : 打印最终检测条件和 Chooser 选择结果
 	DebugPrintTraversalCheckResult(InOutTraversalCheckResult, TraversalSettings);
 
-	// Step 5 : 实际播放 Montage / MotionWarping 
+	// Step 5 : 实际播放 Montage / MotionWarping
 	return PerformTraversalAction(InOutTraversalCheckResult, TraversalSettings);
 }
 
@@ -792,7 +778,7 @@ void UGAFCharacterTraversalComponent::UpdateWarpTargets(
 	}
 
 	float AnimatedDistanceFromFrontLedgeToBackLedge{ 0.0f };
-	
+
 	// 分Front BackLedge BackFloor 进行更新
 	UpdateFrontLedgeWarpTarget(*MotionWarping, TraversalResult, TraversalSettings, *Character);
 
@@ -874,7 +860,7 @@ bool UGAFCharacterTraversalComponent::UpdateBackLedgeWarpTarget(
 		TraversalSettings.DistanceFromLedgeCurveName,
 		BackLedgeCurveSampleTime,
 		OutAnimatedDistanceFromFrontLedgeToBackLedge);
-	
+
 	if (!bHasCurveData)
 	{
 		MotionWarping.RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
@@ -929,7 +915,7 @@ void UGAFCharacterTraversalComponent::UpdateBackFloorWarpTarget(
 		TraversalSettings.DistanceFromLedgeCurveName,
 		BackFloorCurveSampleTime,
 		AnimatedDistanceFromFrontLedgeToBackFloor);
-	
+
 	if (!bHasCurveData)
 	{
 		MotionWarping.RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
@@ -945,7 +931,7 @@ void UGAFCharacterTraversalComponent::UpdateBackFloorWarpTarget(
 	const FVector BackFloorHorizontalLocation =
 		TraversalResult.BackLedgeLocation
 		+ TraversalResult.BackLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector)
-		* BackFloorHorizontalOffset;
+			* BackFloorHorizontalOffset;
 	const FVector BackFloorTargetLocation{
 		BackFloorHorizontalLocation.X,
 		BackFloorHorizontalLocation.Y,

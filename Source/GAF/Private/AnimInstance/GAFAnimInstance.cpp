@@ -20,9 +20,7 @@ bool UGAFAnimationInstance::GetTraversalPoseHistoryReference(
 
 	if (PoseHistoryTag.IsNone())
 	{
-		UE_LOG(LogGAFAnimation, Warning,
-			TEXT("%s failed to get traversal pose history: PoseHistoryTag is None. Check MotionMatchingSettings.TraversalPoseHistoryTag."),
-			*GetNameSafe(this));
+		UE_LOG(LogGAFAnimation, Warning, TEXT("%s failed to get traversal pose history: PoseHistoryTag is None. Check MotionMatchingSettings.TraversalPoseHistoryTag."), *GetNameSafe(this));
 
 		ensureMsgf(false,
 			TEXT("%s failed to get traversal pose history because PoseHistoryTag is None."),
@@ -36,10 +34,7 @@ bool UGAFAnimationInstance::GetTraversalPoseHistoryReference(
 
 	if (PoseHistoryNode == nullptr)
 	{
-		UE_LOG(LogGAFAnimation, Warning,
-			TEXT("%s failed to get traversal pose history: cannot find PoseSearchHistoryCollector node tagged [%s]. Check the AnimGraph node Tag."),
-			*GetNameSafe(this),
-			*PoseHistoryTag.ToString());
+		UE_LOG(LogGAFAnimation, Warning, TEXT("%s failed to get traversal pose history: cannot find PoseSearchHistoryCollector node tagged [%s]. Check the AnimGraph node Tag."), *GetNameSafe(this), *PoseHistoryTag.ToString());
 
 		ensureMsgf(false,
 			TEXT("%s failed to find PoseSearchHistoryCollector node tagged [%s]."),
@@ -50,10 +45,7 @@ bool UGAFAnimationInstance::GetTraversalPoseHistoryReference(
 
 	if (PoseHistoryNode->GetPoseHistoryPtr() == nullptr)
 	{
-		UE_LOG(LogGAFAnimation, Warning,
-			TEXT("%s failed to get traversal pose history: PoseSearchHistoryCollector node [%s] exists, but its PoseHistory is invalid."),
-			*GetNameSafe(this),
-			*PoseHistoryTag.ToString());
+		UE_LOG(LogGAFAnimation, Warning, TEXT("%s failed to get traversal pose history: PoseSearchHistoryCollector node [%s] exists, but its PoseHistory is invalid."), *GetNameSafe(this), *PoseHistoryTag.ToString());
 
 		ensureMsgf(false,
 			TEXT("%s found PoseSearchHistoryCollector node [%s], but PoseHistory is invalid."),

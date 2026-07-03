@@ -33,7 +33,7 @@ struct GAF_API FGAFTraversalSettings
 	// 空中状态检测胶囊半高
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float AirTraceCapsuleHalfHeight{ 86.0f };
-	
+
 	// 空中状态固定前方检测距离
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float AirTraceForwardDistance{ 75.0f };
@@ -75,7 +75,7 @@ struct GAF_API FGAFTraversalSettings
 	int32 DebugDrawLevel{ 1 };
 
 	// Trace Debug 保留时间，仅 ForDuration 等持续绘制模式使用
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Debug", meta = (ClampMin = "0.0", ClampMax = "60",UIMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Debug", meta = (ClampMin = "0.0", ClampMax = "60", UIMin = "0.0"))
 	float DebugDrawDuration{ 1.5f };
 
 	// Traversal 屏幕调试文本颜色，用于 PrintString 输出失败原因等状态
