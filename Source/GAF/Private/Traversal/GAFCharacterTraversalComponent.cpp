@@ -2,8 +2,12 @@
 
 #include "GAFLogChannels.h"
 #include "Traversal/GAFTraversalCollisionResolver.h"
+#include "Traversal/GAFTraversableLedgeProviderComponent.h"
+#include "Animation/AnimationTypes.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterTraversalComponent)
 
@@ -15,13 +19,14 @@ UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 
 bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	const FGAFTraversalCheckInputs& Inputs,
-	const EGAFTraversalDebugType DebugType,
+	const FGAFTraversalSettings& TraversalSettings,
+	const EDrawDebugTrace::Type DebugType,
 	FGAFTraversalCheckResult& OutResult)
 {
 	// 存放检测结果
 	OutResult.Reset();
 
-	const ACharacter* Character = GetOwnerCharacter();
+	ACharacter* Character = GetOwnerCharacter();
 	if (!IsValid(Character))
 	{
 		OutResult.FailureReason = EGAFTraversalFailureReason::InvalidOwner;
@@ -42,13 +47,75 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		return false;
 	}
 
-	// 从项目设置里解析出使用的 TraceChannel
-	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
+	// 优先使用角色配置覆盖的 TraceChannel，否则回退到项目级 TraversalConfig。
+	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel(&TraversalSettings);
 
-	// Step 1 : Step 1: Cache some important values for use later in the function.
+	// Step 1 : 通过接口获取翻越所需数据
+	CachedTraversalData = FGAFTraversalFrameData{};
 
-	// Step 2.1 : Step 2.1: Perform a trace in the actor's forward direction to find a Traversable Level Block.
-	// If found, set the Hit Component, if not, exit the function.
+	const IGAFCharacterDataProvider* Provider =
+		Cast<IGAFCharacterDataProvider>(Character);
+	const bool bHasData = Provider && Provider->GetTraversalFrameData(CachedTraversalData);
+
+	// 数据无效
+	// TODO:考虑使用上一帧数据而不是直接用默认值
+	if (!bHasData)
+	{
+		CachedTraversalData = FGAFTraversalFrameData{};
+	}
+
+	const FVector ActorLocation = Character->GetActorLocation();
+
+	// Step 2.1 : 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
+	// 如果找到了，就设置 Hit Component, 反之退出并返回失败原因
+	const FVector TraceStart = ActorLocation + Inputs.TraceOriginOffset;
+	const FVector TraceEnd =
+		TraceStart
+		+ Inputs.TraceForwardDirection * Inputs.TraceForwardDistance
+		+ Inputs.TraceEndOffset;
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(Character);
+
+	FHitResult Hit;
+	const EDrawDebugTrace::Type EffectiveDebugType =
+		TraversalSettings.DebugDrawLevel >= 2 ? DebugType : EDrawDebugTrace::None;
+
+	const bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(
+		this,
+		TraceStart,
+		TraceEnd,
+		Inputs.TraceRadius,
+		Inputs.TraceHalfHeight,
+		UEngineTypes::ConvertToTraceType(TraversalTraceChannel),
+		false,
+		ActorsToIgnore,
+		EffectiveDebugType,
+		Hit,
+		true,
+		FLinearColor::Red,
+		FLinearColor::Green,
+		TraversalSettings.DebugDrawDuration);
+
+	if (!bHit)
+	{
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		return false;
+	}
+
+	AActor* HitActor = Hit.GetActor();
+	const UGAFTraversableLedgeProviderComponent* TraversableProvider =
+		IsValid(HitActor)
+		? HitActor->FindComponentByClass<UGAFTraversableLedgeProviderComponent>()
+		: nullptr;
+
+	if (!IsValid(TraversableProvider))
+	{
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		return false;
+	}
+
+	OutResult.HitComponent = Hit.GetComponent();
 
 	// Step 2.2 : If a traversable level block was found, get the front and back ledge transforms from it (using its own internal function).
 

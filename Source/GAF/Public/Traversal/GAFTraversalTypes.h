@@ -21,14 +21,6 @@ enum class EGAFTraversalActionType : uint8
 	Mantle
 };
 
-UENUM(BlueprintType)
-enum class EGAFTraversalDebugType : uint8
-{
-	None,
-	ForOneFrame,
-	ForDuration
-};
-
 // 翻越检测失败原因
 UENUM(BlueprintType)
 enum class EGAFTraversalFailureReason : uint8
@@ -73,6 +65,7 @@ struct GAF_API FGAFTraversalCheckInputs
 	float TraceHalfHeight{ 0.0f };
 };
 
+// 翻越检测结果
 USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversalCheckResult
 {

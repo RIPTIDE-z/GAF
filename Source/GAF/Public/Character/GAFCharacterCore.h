@@ -6,6 +6,7 @@
 #include "Animation/GAFCharacterDataProvider.h"
 #include "Animation/GAFAnimationTypes.h"
 #include "Settings/GAFCharacterSettings.h"
+#include "Traversal/GAFTraversalTypes.h"
 #include "GAFCharacterCore.generated.h"
 
 class UGAFCharacterMovementComponent;
@@ -62,6 +63,7 @@ public:
 protected:
 	bool CanSprint() const;
 	void RefreshCrouchFromInputState();
+	FGAFTraversalCheckInputs GetTraversalCheckInputs() const;
 	const UGAFCharacterSettings& GetDefaultCharacterSettings() const;
 	void InitCharacterMovementSettings(UGAFCharacterMovementComponent* CMC, const FGAFMovementSettings& Settings) const;
 

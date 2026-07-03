@@ -1,28 +1,44 @@
 # GAF Traversal
 
 - `GAFCharacterTraversalComponent`
-    - 挂在角色上，负责发起 Traversal 检测、维护 `bDoingTraversalAction`、后续选择 Montage 和执行翻越
+  - 挂在角色上，负责发起 Traversal 检测、维护 `bDoingTraversalAction`、后续选择 Montage 和执行翻越
 - `GAFTraversableLedgeProviderComponent`
-    - 挂在可翻越的场景 Actor 上。
-    - 负责从该 Actor 的 ledge spline 中提供 Front / Back Ledge 数据
+  - 挂在可翻越的场景 Actor 上。
+  - 负责从该 Actor 的 ledge spline 中提供 Front / Back Ledge 数据
 - `GAFTraversableLedgeSplineComponent`
-    - 继承自 `USplineComponent`，表示一条可攀爬边缘，可直接在编辑器视口中编辑 spline 点
+  - 继承自 `USplineComponent`，表示一条可攀爬边缘，可直接在编辑器视口中编辑 spline 点
 - `GAFTraversalTypes`
-    - 存放 Traversal 使用的 enum 和 struct
-    - 包括 `FGAFTraversalCheckInputs`、`FGAFTraversalCheckResult`、`EGAFTraversalActionType` 等
+  - 存放 Traversal 使用的 enum 和 struct
+  - 包括 `FGAFTraversalCheckInputs`、`FGAFTraversalCheckResult`、`EGAFTraversalActionType` 等
 - `GAFTraversalCollisionResolver`
-    - 从项目设置读取 Traversal 使用的 C++ `ECollisionChannel`
-- `GAFTraversalSettings` 用于暴露 Project Settings 配置，可配置用于Traversal的碰撞频道
+  - 解析 Traversal 使用的 C++ `ECollisionChannel`
+- `FGAFTraversalSettings`
+  - 嵌在 `UGAFCharacterSettings` 中，配置角色侧 Traversal trace、debug 和可选 collision channel override
+- `UGAFTraversalConfig`
+  - Project Settings 中的全局 Traversal 配置，提供默认 collision channel
 
 ## 角色侧
 
 `UGAFCharacterTraversalComponent` 由 `AGAFCharacterCore` 默认创建
 
+- `AGAFCharacterCore::GetTraversalCheckInputs()` 会从 `CharacterSettings.TraversalSettings` 构造本次检测输入
+- `MOVE_Falling / MOVE_Flying` 使用空中 trace 配置
+- 其他 MovementMode 使用地面 trace 配置，并根据角色本地前向速度放大检测距离
 - 输入逻辑在 `AGAFCharacterPlayable` 中处理：
-    - Jump `Started`：先尝试 Traversal，失败后执行普通 `Jump()`
-    - Jump `Triggered`：空中持续尝试 Traversal，失败不触发普通 Jump
-    - Jump `Completed / Canceled`：调用 `StopJumping()`
 
+  - Jump `Started`：先尝试 Traversal，失败后执行普通 `Jump()`
+  - Jump `Triggered`：空中持续尝试 Traversal，失败不触发普通 Jump
+  - Jump `Completed / Canceled`：调用 `StopJumping()`
+
+`TryTraversalAction()` 不从组件内部读取配置，而是由调用方显式传入当前角色的 `FGAFTraversalSettings`：
+
+```cpp
+CharacterTraversalComponent->TryTraversalAction(
+	GetTraversalCheckInputs(),
+	GetDefaultCharacterSettings().TraversalSettings,
+	EDrawDebugTrace::ForDuration,
+	TraversalCheckResult);
+```
 
 ## 场景侧
 
@@ -40,6 +56,7 @@ Actor
 `UGAFTraversableLedgeProviderComponent` 内部通过 `LedgePairs` 配置边缘关系：
 
 - 每个 pair 最多包含两条 `UGAFTraversableLedgeSplineComponent`
+- 每条边可以单独配置是否可攀爬
 - 两条边没有固定 Front / Back 语义
 - 查询时会根据角色位置自动选择离角色更近的一条作为 `FrontLedge`
 - 允许只配置一条边，这种情况下只返回 FrontLedge
@@ -74,9 +91,41 @@ Actor
 - 选中的 Montage、StartTime、PlayRate
 - 失败原因
 
+## Traversal Settings
+
+角色侧 Traversal 参数配置在 `UGAFCharacterSettings` 的 `TraversalSettings` 内，和 `MovementSettings` 同级。
+
+主要参数：
+
+- `TraceRadius`：前方胶囊检测半径
+- `GroundTraceHalfHeight`：地面检测胶囊半高
+- `GroundMinTraceForwardDistance`：地面低速时的最小前方检测距离
+- `GroundMaxTraceForwardDistance`：地面高速时的最大前方检测距离
+- `GroundMaxTraceForwardSpeed`：本地前向速度达到该值时使用最大检测距离
+- `AirTraceForwardDistance`：空中固定前方检测距离
+- `AirTraceEndOffset`：空中 trace 终点偏移，当前默认向上偏移 50
+- `AirTraceHalfHeight`：空中检测胶囊半高
+- `DebugDrawLevel`：trace debug 等级，当前 `0/1` 不绘制，`2+` 按传入的 `EDrawDebugTrace::Type` 绘制
+- `DebugDrawDuration`：持续绘制时的保留时间
+
+默认数值复现当前 GASP 逻辑：
+
+```text
+Ground:
+TraceRadius = 30
+TraceHalfHeight = 60
+ForwardDistance = LocalForwardSpeed 0..500 -> 75..350
+
+Air:
+TraceRadius = 30
+TraceHalfHeight = 86
+ForwardDistance = 75
+TraceEndOffset = (0, 0, 50)
+```
+
 ## Trace Channel
 
-Traversal 不硬编码 `ECC_GameTraceChannel1`，而是通过 `UGAFTraversalSettings` 在 Project Settings 中选择
+Traversal 不硬编码 `ECC_GameTraceChannel1`，而是通过配置解析最终使用的 `ECollisionChannel`。
 
 推荐配置：
 
@@ -91,13 +140,35 @@ Default Response: Ignore
 然后在插件设置中选择：
 
 ```text
-Project Settings -> Plugins -> GAF Traversal
+Project Settings -> Plugins -> GAF Traversal Config
 Traversable Trace Channel: Traversable
 ```
 
-C++ 检测时统一通过 resolver 获取 channel：
+默认情况下，C++ 检测通过 `UGAFTraversalConfig` 读取全局 channel：
 
 ```cpp
 const ECollisionChannel Channel =
 	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
+```
+
+如果某个角色需要特殊 channel，可以在 `CharacterSettings.TraversalSettings` 中开启：
+
+```text
+bOverrideTraversalTraceChannel = true
+TraversalTraceChannel = 该角色专用 Channel
+```
+
+此时 resolver 会优先使用角色配置：
+
+```cpp
+const ECollisionChannel Channel =
+	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel(&TraversalSettings);
+```
+
+优先级：
+
+```text
+CharacterSettings.TraversalSettings override
+-> Project Settings: UGAFTraversalConfig
+-> ECC_Visibility fallback
 ```

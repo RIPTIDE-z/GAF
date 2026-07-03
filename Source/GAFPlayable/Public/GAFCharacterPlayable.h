@@ -4,7 +4,6 @@
 #include "GAFCharacterPlayable.generated.h"
 
 struct FInputActionValue;
-enum class EGAFTraversalDebugType : uint8;
 class UInputMappingContext;
 class UInputAction;
 class UGAFInputConfig;

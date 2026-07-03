@@ -220,7 +220,7 @@ FVector UGAFTraversableLedgeProviderComponent::GetLedgeNormalFacingLocation(
 	FVector Normal = Ledge.GetUpVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
 
 	(void)TargetLocation;
-	// // 这里可以做根据点到角色方向的自动翻转机制，但是会破坏 “ 边缘只有一侧可攀爬 ” 的语义
+	// // 这里可以做根据点到角色方向的自动翻转机制，但是会破坏 “ 边缘只有一侧可攀爬 ” 的语义，需要进一步更改逻辑
 	// const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
 	//
 	// // Ledge 点到目标点的方向
@@ -253,6 +253,8 @@ void UGAFTraversableLedgeProviderComponent::RefreshResolvedLedgePairs()
 
 		UGAFTraversableLedgeSplineComponent* FirstLedge = ResolveLedgeSpline(Pair.FirstLedge);
 		UGAFTraversableLedgeSplineComponent* SecondLedge = ResolveLedgeSpline(Pair.SecondLedge);
+
+		// 两条边都无效则不能作为 Pair，但是允许单边无效
 		if (!IsValid(FirstLedge) && !IsValid(SecondLedge))
 		{
 			UE_LOG(LogGAFTraversal, Warning, TEXT("%s skipped a LedgePair: both ledges are invalid."), *GetNameSafe(this));
@@ -261,7 +263,6 @@ void UGAFTraversableLedgeProviderComponent::RefreshResolvedLedgePairs()
 
 		FGAFResolvedTraversableLedgePair ResolvedPair;
 		ResolvedPair.FirstLedge = FirstLedge;
-		// 允许只配置一条边，查询时有效的一边会被当作 FrontLedge
 		ResolvedPair.SecondLedge = SecondLedge;
 
 		ResolvedLedgePairs.Add(ResolvedPair);

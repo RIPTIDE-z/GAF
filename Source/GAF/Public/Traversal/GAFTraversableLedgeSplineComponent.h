@@ -12,7 +12,7 @@ class GAF_API UGAFTraversableLedgeSplineComponent : public USplineComponent
 public:
 	UGAFTraversableLedgeSplineComponent();
 
-	// 控制单条可攀爬边缘是否参与 Traversable 查询。
+	// 控制单条可攀爬边缘是否可攀爬
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
 	bool bEnabled{ true };
 };

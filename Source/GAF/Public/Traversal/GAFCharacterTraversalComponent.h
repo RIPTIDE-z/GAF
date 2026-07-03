@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Animation/GAFCharacterDataProvider.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Settings/GAFTraversalSettings.h"
 #include "Traversal/GAFTraversalTypes.h"
 
 #include "GAFCharacterTraversalComponent.generated.h"
@@ -24,26 +26,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	bool TryTraversalAction(
 		const FGAFTraversalCheckInputs& Inputs,
-		EGAFTraversalDebugType DebugType,
+		const FGAFTraversalSettings& TraversalSettings,
+		EDrawDebugTrace::Type DebugType,
 		FGAFTraversalCheckResult& OutResult);
-
-	// Debug绘制等级
-	// TODO: 提升为控制台变量
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
-	int DebugDrawLevel{ 1 };
-
-	// Debug绘制时间
-	// TODO: 提升为控制台变量
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
-	float DebugDrawDuration{ 1.5f };
 
 protected:
 	ACharacter* GetOwnerCharacter() const;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
+	UPROPERTY(BlueprintReadOnly)
 	bool bDoingTraversalAction{ false };
 
 	// 缓存的运动数据
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient)
 	FGAFTraversalFrameData CachedTraversalData;
 };

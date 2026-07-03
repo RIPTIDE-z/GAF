@@ -395,6 +395,49 @@ void AGAFCharacterCore::RefreshCrouchFromInputState()
 	}
 }
 
+// 根据 MovementMode 不同从 Settings 里读取不同的检测数据
+// 地面：速度越快，往前查得越远，检测胶囊较矮
+// 空中：固定短距离，往前上方查，检测胶囊较高
+FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
+{
+	const FGAFTraversalSettings& TraversalSettings = GetDefaultCharacterSettings().TraversalSettings;
+
+	FGAFTraversalCheckInputs Inputs;
+	Inputs.TraceForwardDirection = GetActorForwardVector();
+	Inputs.TraceOriginOffset = FVector::ZeroVector;
+	Inputs.TraceRadius = TraversalSettings.TraceRadius;
+
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!IsValid(Movement))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to build traversal check inputs: CMC is invalid."), *GetNameSafe(this));
+		Inputs.TraceForwardDistance = TraversalSettings.GroundMinTraceForwardDistance;
+		Inputs.TraceEndOffset = FVector::ZeroVector;
+		Inputs.TraceHalfHeight = TraversalSettings.GroundTraceHalfHeight;
+		return Inputs;
+	}
+
+	if (Movement->MovementMode == MOVE_Falling || Movement->MovementMode == MOVE_Flying)
+	{
+		Inputs.TraceForwardDistance = TraversalSettings.AirTraceForwardDistance;
+		Inputs.TraceEndOffset = TraversalSettings.AirTraceEndOffset;
+		Inputs.TraceHalfHeight = TraversalSettings.AirTraceHalfHeight;
+		return Inputs;
+	}
+
+	const FVector LocalVelocity = GetActorRotation().UnrotateVector(Movement->Velocity);
+	const float GroundMaxTraceForwardSpeed = FMath::Max(TraversalSettings.GroundMaxTraceForwardSpeed, 1.0f);
+	// 速度越快往前检测距离越远
+	Inputs.TraceForwardDistance = FMath::GetMappedRangeValueClamped(
+		FVector2D{ 0.0f, GroundMaxTraceForwardSpeed },
+		FVector2D{ TraversalSettings.GroundMinTraceForwardDistance, TraversalSettings.GroundMaxTraceForwardDistance },
+		LocalVelocity.X);
+	Inputs.TraceEndOffset = FVector::ZeroVector;
+	Inputs.TraceHalfHeight = TraversalSettings.GroundTraceHalfHeight;
+
+	return Inputs;
+}
+
 const UGAFCharacterSettings& AGAFCharacterCore::GetDefaultCharacterSettings() const
 {
 	return IsValid(CharacterSettings)

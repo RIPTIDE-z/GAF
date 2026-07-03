@@ -316,7 +316,11 @@ void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionV
 	FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
 
 	// 第一次按下时先尝试 Traversal，Traversal 失败才执行普通 Jump
-	if (!CharacterTraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult))
+	if (!CharacterTraversalComponent->TryTraversalAction(
+		GetTraversalCheckInputs(),
+		GetDefaultCharacterSettings().TraversalSettings,
+		EDrawDebugTrace::ForDuration,
+		TraversalCheckResult))
 	{
 		Jump();
 	}
@@ -337,7 +341,11 @@ void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& Actio
 	if (Movement->IsFalling())
 	{
 		FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
-		CharacterTraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult);
+		CharacterTraversalComponent->TryTraversalAction(
+			GetTraversalCheckInputs(),
+			GetDefaultCharacterSettings().TraversalSettings,
+			EDrawDebugTrace::ForOneFrame,
+			TraversalCheckResult);
 	}
 }
 
