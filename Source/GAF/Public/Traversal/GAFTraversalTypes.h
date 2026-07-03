@@ -31,6 +31,7 @@ enum class EGAFTraversalFailureReason : uint8
 	AlreadyDoingTraversal,
 	CantFindTraversableObject,
 	CantFindFrontLedge,
+	NoRoomMoveToFrontLedge,
 	TraversalCheckFailed,
 	MontageSelectionFailed,
 };
@@ -59,11 +60,11 @@ struct GAF_API FGAFTraversalCheckInputs
 
 	// 用于Trace的胶囊体的半径
 	UPROPERTY(BlueprintReadOnly)
-	float TraceRadius{ 0.0f };
+	float TraceCapsuleRadius{ 0.0f };
 
 	// 用于Trace的胶囊体的半高度
 	UPROPERTY(BlueprintReadOnly)
-	float TraceHalfHeight{ 0.0f };
+	float TraceCapsuleHalfHeight{ 0.0f };
 };
 
 // 翻越检测结果

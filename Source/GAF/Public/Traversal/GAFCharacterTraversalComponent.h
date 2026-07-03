@@ -25,10 +25,10 @@ public:
 	// 若检测判定失败则会将原因写入CheckResult
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	bool TryTraversalAction(
-		const FGAFTraversalCheckInputs& Inputs,
+		const FGAFTraversalCheckInputs& TraversalCheckInputs,
 		const FGAFTraversalSettings& TraversalSettings,
-		EDrawDebugTrace::Type DebugType,
-		FGAFTraversalCheckResult& OutResult);
+		EDrawDebugTrace::Type TraversalDebugType,
+		FGAFTraversalCheckResult& InOutTraversalCheckResult);
 
 	// 输出 Traversal 检测失败原因，集中放在 Traversal 系统里，避免 Playable 直接处理调试格式。
 	void DebugPrintTraversalFailureReason(

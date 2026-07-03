@@ -406,7 +406,7 @@ FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
 	FGAFTraversalCheckInputs Inputs;
 	Inputs.TraceForwardDirection = GetActorForwardVector();
 	Inputs.TraceOriginOffset = FVector::ZeroVector;
-	Inputs.TraceRadius = TraversalSettings.TraceRadius;
+	Inputs.TraceCapsuleRadius = TraversalSettings.TraceCapsuleRadius;
 
 	const UCharacterMovementComponent* Movement = GetCharacterMovement();
 	if (!IsValid(Movement))
@@ -414,7 +414,7 @@ FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to build traversal check inputs: CMC is invalid."), *GetNameSafe(this));
 		Inputs.TraceForwardDistance = TraversalSettings.GroundMinTraceForwardDistance;
 		Inputs.TraceEndOffset = FVector::ZeroVector;
-		Inputs.TraceHalfHeight = TraversalSettings.GroundTraceHalfHeight;
+		Inputs.TraceCapsuleHalfHeight = TraversalSettings.GroundTraceCapsuleHalfHeight;
 		return Inputs;
 	}
 
@@ -422,7 +422,7 @@ FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
 	{
 		Inputs.TraceForwardDistance = TraversalSettings.AirTraceForwardDistance;
 		Inputs.TraceEndOffset = TraversalSettings.AirTraceEndOffset;
-		Inputs.TraceHalfHeight = TraversalSettings.AirTraceHalfHeight;
+		Inputs.TraceCapsuleHalfHeight = TraversalSettings.AirTraceCapsuleHalfHeight;
 		return Inputs;
 	}
 
@@ -434,7 +434,7 @@ FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
 		FVector2D{ TraversalSettings.GroundMinTraceForwardDistance, TraversalSettings.GroundMaxTraceForwardDistance },
 		LocalVelocity.X);
 	Inputs.TraceEndOffset = FVector::ZeroVector;
-	Inputs.TraceHalfHeight = TraversalSettings.GroundTraceHalfHeight;
+	Inputs.TraceCapsuleHalfHeight = TraversalSettings.GroundTraceCapsuleHalfHeight;
 
 	return Inputs;
 }

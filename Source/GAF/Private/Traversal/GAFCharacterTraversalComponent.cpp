@@ -19,34 +19,35 @@ UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 }
 
 bool UGAFCharacterTraversalComponent::TryTraversalAction(
-	const FGAFTraversalCheckInputs& Inputs,
+	const FGAFTraversalCheckInputs& TraversalCheckInputs,
 	const FGAFTraversalSettings& TraversalSettings,
-	const EDrawDebugTrace::Type DebugType,
-	FGAFTraversalCheckResult& OutResult)
+	const EDrawDebugTrace::Type TraversalDebugType,
+	FGAFTraversalCheckResult& InOutTraversalCheckResult)
 {
-	// 存放检测结果
-	OutResult.Reset();
 
 	ACharacter* Character = GetOwnerCharacter();
 	if (!IsValid(Character))
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::InvalidOwner;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidOwner;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: owner is not a valid Character."), *GetNameSafe(this));
 		return false;
 	}
 
 	if (!IsValid(Character->GetCharacterMovement()))
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::InvalidMovementComponent;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidMovementComponent;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: CMC is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
 		return false;
 	}
 
 	if (bDoingTraversalAction)
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::AlreadyDoingTraversal;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::AlreadyDoingTraversal;
 		return false;
 	}
+	
+	// 存放检测结果
+	InOutTraversalCheckResult.Reset();
 
 	// 优先使用角色配置覆盖的 TraceChannel，否则回退到项目级 TraversalConfig
 	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel(&TraversalSettings);
@@ -65,55 +66,65 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		CachedTraversalData = FGAFTraversalFrameData{};
 	}
 
-	const FVector ActorLocation = Character->GetActorLocation();
-
-	// Step 2.1 Traversable Object Search: 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
-	// 如果找到了，就设置 Hit Component, 反之退出并返回失败原因
+	// 可复用的Trace设定，结果缓存
+	const FVector& ActorLocation = Character->GetActorLocation();
+	const float& TraceCapsuleRadius = TraversalCheckInputs.TraceCapsuleRadius;
+	const float& TraceCapsuleHalfHeight = TraversalCheckInputs.TraceCapsuleHalfHeight;
+	const ETraceTypeQuery& TraceChannel = UEngineTypes::ConvertToTraceType(TraversalTraceChannel);
+	const float& DebugDrawDuration = TraversalSettings.DebugDrawDuration;
+	const int32& DebugDrawLevel = TraversalSettings.DebugDrawLevel;
 	
-	// 2.1.1 起点 = 角色位置 + 起点偏移值
-	const FVector TraceStart = ActorLocation + Inputs.TraceOriginOffset;
-	
-	// 2.1.2 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
-	const FVector TraceEnd =
-		TraceStart
-		+ Inputs.TraceForwardDirection * Inputs.TraceForwardDistance
-		+ Inputs.TraceEndOffset;
+	const FVector& TraceOriginOffset =  TraversalCheckInputs.TraceOriginOffset;
+	const FVector& TraceForwardDirection =  TraversalCheckInputs.TraceForwardDirection;
+	const float& TraceForwardDistance =  TraversalCheckInputs.TraceForwardDistance;
+	const FVector& TraceEndOffset =  TraversalCheckInputs.TraceEndOffset;
 
 	// 忽略自身
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(Character);
+	
+	EDrawDebugTrace::Type EffectiveDebugType = DebugDrawLevel >= 2 ? TraversalDebugType : EDrawDebugTrace::None;
 
-	FHitResult TraversableObjectHitResult;
-	const EDrawDebugTrace::Type EffectiveDebugType =
-		TraversalSettings.DebugDrawLevel >= 2 ? DebugType : EDrawDebugTrace::None;
-
+	// Step 2.1 Traversable Object Search : 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
+	// 如果找到了，就设置 Hit Component, 反之退出并返回失败原因
+	
+	// 2.1.1 起点 = 角色位置 + 起点偏移值
+	const FVector TraceStart = ActorLocation + TraceOriginOffset;
+	
+	// 2.1.2 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
+	const FVector TraceEnd =
+		TraceStart
+		+ TraceForwardDirection * TraceForwardDistance
+		+ TraceEndOffset;
+	
 	// 2.1.3 使用 Capsule Trace
-	const bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(
+	FHitResult TraversableSearchHitResult;
+	const bool bTraversableSearchHit = UKismetSystemLibrary::CapsuleTraceSingle(
 		this,
 		TraceStart,
 		TraceEnd,
-		Inputs.TraceRadius,
-		Inputs.TraceHalfHeight,
-		UEngineTypes::ConvertToTraceType(TraversalTraceChannel),
+		TraceCapsuleRadius,
+		TraceCapsuleHalfHeight,
+		TraceChannel,
 		false,
 		ActorsToIgnore,
 		EffectiveDebugType,
-		TraversableObjectHitResult,
+		TraversableSearchHitResult,
 		true,
 		FLinearColor::Black,
 		FLinearColor::Black,
-		TraversalSettings.DebugDrawDuration);
+		DebugDrawDuration);
 
-	if (!bHit)
+	if (!bTraversableSearchHit)
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		return false;
 	}
 
-	const AActor* HitActor = TraversableObjectHitResult.GetActor();
+	const AActor* HitActor = TraversableSearchHitResult.GetActor();
 	if (!IsValid(HitActor))
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		return false;
 	}
 
@@ -122,13 +133,13 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	if (TraversableProviders.IsEmpty())
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		return false;
 	}
 
 	if (TraversableProviders.Num() > 1)
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		UE_LOG(LogGAFTraversal, Warning,
 			TEXT("%s failed to try traversal action: hit actor [%s] has multiple TraversableLedgeProvider components. Only one provider is allowed per traversable actor."),
 			*GetNameSafe(this),
@@ -139,17 +150,15 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	const UGAFTraversableLedgeProviderComponent* TraversableProvider = TraversableProviders[0];
 	if (!IsValid(TraversableProvider))
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		return false;
 	}
 
-	OutResult.HitComponent = TraversableObjectHitResult.GetComponent();
+	InOutTraversalCheckResult.HitComponent = TraversableSearchHitResult.GetComponent();
 
-	// Step 2.2 Get Ledge : 如果检测到了可翻越物体，调用其内部函数找到Front/Back Ledge
-	FGAFTraversalCheckResult InOutTraversalCheckResult = FGAFTraversalCheckResult{};
-	bool bGetLedge = TraversableProvider->GetLedgeTransforms(TraversableObjectHitResult.ImpactPoint, ActorLocation, InOutTraversalCheckResult);
-	OutResult = InOutTraversalCheckResult;
-	OutResult.HitComponent = TraversableObjectHitResult.GetComponent();
+	// Step 2.2 Traversable Ledge Search : 如果检测到了可翻越物体，调用其内部函数找到 Front/Back Ledge
+	bool bGetLedge = TraversableProvider->GetLedgeTransforms(TraversableSearchHitResult.ImpactPoint, ActorLocation, InOutTraversalCheckResult);
+	InOutTraversalCheckResult.HitComponent = TraversableSearchHitResult.GetComponent();
 	
 	// DEBUG(Step2): 绘制前后边缘位置
 	// TODO:提取为单独模块
@@ -158,59 +167,175 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		UWorld* World = GetWorld();
 		if (IsValid(World))
 		{
-			if (OutResult.bHasFrontLedge)
+			if (InOutTraversalCheckResult.bHasFrontLedge)
 			{
 				DrawDebugSphere(
 					World,
-					OutResult.FrontLedgeLocation,
+					InOutTraversalCheckResult.FrontLedgeLocation,
 					10.0f,
 					12,
 					FColor::Green,
 					false,
-					TraversalSettings.DebugDrawDuration,
+					DebugDrawDuration,
 					0,
 					1.0f);
 			}
 
-			if (OutResult.bHasBackLedge)
+			if (InOutTraversalCheckResult.bHasBackLedge)
 			{
 				DrawDebugSphere(
 					World,
-					OutResult.BackLedgeLocation,
+					InOutTraversalCheckResult.BackLedgeLocation,
 					10.0f,
 					12,
 					FColor::Blue,
 					false,
-					TraversalSettings.DebugDrawDuration,
+					DebugDrawDuration,
 					0,
 					1.0f);
 			}
 		}
 	}
 
-	// Step 3.1 If the traversable level block has a valid front ledge, continue the function. If not, exit early.
-	if (!OutResult.bHasFrontLedge)
+	// Step 3.1 : If the traversable level block has a valid front ledge, continue the function. If not, exit early.
+	if (!InOutTraversalCheckResult.bHasFrontLedge)
 	{
-		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindFrontLedge;
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindFrontLedge;
 		return false;
 	}
 
-	// Step 3.2: Perform a trace from the actors location up to the front ledge location to determine
-	// if there is room for the actor to move up to it. If so, continue the function. If not, exit early.
+	// Step 3.2 Has Room Check : 从角色位置往前边缘进行Trace，判断角色是否能够移动到攀爬点(是否有障碍物)
+	
+	// 3.2.1 终点 = FrontLedge位置:1. 向 LedgeNormal 偏移一个胶囊体半径 2. 向 Z 轴上方偏移一个胶囊体半高
+	// 会加一个小的偏移量(2.0f)，LedgeNormal 固定为朝向可攀爬侧(角色进入方向)
+	// TODO:这种检查办法应该局限于非常方正的可攀爬物
+	const FVector HasRoomCheckFrontLedgeLocation = 
+		InOutTraversalCheckResult.FrontLedgeLocation 
+		+ InOutTraversalCheckResult.FrontLedgeNormal * (TraceCapsuleRadius + 2.0f)
+		+ FVector{0.0f, 0.0f, TraceCapsuleHalfHeight + 2.0f};
+	
+	EffectiveDebugType = DebugDrawLevel >= 3 ? TraversalDebugType : EDrawDebugTrace::None;
 
-	// Step 3.3: save the height of the obstacle using the delta between the actor and front ledge transform.
+	// 3.2.2 使用 Capsule Trace
+	FHitResult HasRoomHitResult;
+	const bool bHasRoomHit = UKismetSystemLibrary::CapsuleTraceSingle(
+	   this,
+	   ActorLocation,
+	   HasRoomCheckFrontLedgeLocation,
+	   TraceCapsuleRadius,
+	   TraceCapsuleHalfHeight,
+	   TraceChannel,
+	   false,
+	   ActorsToIgnore,
+	   EffectiveDebugType,
+	   HasRoomHitResult,
+	   true,
+	   FLinearColor::Black,
+	   FLinearColor::Black,
+	   DebugDrawDuration);
+	
+	// 有阻挡物，角色无法攀爬
+	if (HasRoomHitResult.bBlockingHit || HasRoomHitResult.bStartPenetrating)
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::NoRoomMoveToFrontLedge;
+		return false;
+	}
 
-	// Step 3.4: Perform a trace across the top of the obstacle from the front ledge to the back ledge
-	// to see if there's room for the actor to move across it.
+	// Step 3.3: 障碍物高度 = FrontLedge 高度 - 角色胶囊底部高度
+	const FVector ActorCapsuleBottomLocation =
+		ActorLocation - FVector::ZAxisVector * TraceCapsuleHalfHeight;
 
-	// Step 3.5: If there is room, save the obstacle depth using the difference between the front and back ledge locations.
+	const float ObstacleHeight =
+		FMath::Abs(InOutTraversalCheckResult.FrontLedgeLocation.Z - ActorCapsuleBottomLocation.Z);
 
-	// Step 3.6: Trace downward from the back ledge location (using the height of the obstacle for the distance) to find the floor.
-	// If there is a floor, save its location and the back ledges height (using the distance between the back ledge and the floor).
-	// If no floor was found, invalidate the back floor.
+	InOutTraversalCheckResult.ObstacleHeight = ObstacleHeight;
 
-	// Step 3.5: If there is not room, save the obstacle depth using the difference between the
-	// front ledge and the trace impact point, and invalidate the back ledge.
+	// Step 3.4 Top Sweep : 如果存在 BackLedge，则从 FrontLedge 到 BackLedge 做一次顶部空间检测
+	// 用来判断角色胶囊体是否能从障碍物顶部移动到另一侧
+	if (InOutTraversalCheckResult.bHasBackLedge)
+	{
+		// 终点 = BackLedge位置: 1. 向 BackLedgeNormal 偏移一个胶囊体半径 2. 向 Z 轴上方偏移一个胶囊体半高
+		// 和 FrontLedge 的 HasRoomCheck 位置保持一致，使顶部 Sweep 检测的是角色胶囊体中心的移动路径
+		const FVector HasRoomCheckBackLedgeLocation =
+			InOutTraversalCheckResult.BackLedgeLocation
+			+ InOutTraversalCheckResult.BackLedgeNormal * (TraceCapsuleRadius + 2.0f)
+			+ FVector::ZAxisVector * (TraceCapsuleHalfHeight + 2.0f);
+
+		EffectiveDebugType = DebugDrawLevel >= 3 ? TraversalDebugType : EDrawDebugTrace::None;
+
+		// 从 FrontLedge 的可站位点扫到 BackLedge 的可站位点，检测顶部是否有阻挡
+		FHitResult TopSweepHitResult;
+		const bool bTopSweepHit = UKismetSystemLibrary::CapsuleTraceSingle(
+			this,
+			HasRoomCheckFrontLedgeLocation,
+			HasRoomCheckBackLedgeLocation,
+			TraceCapsuleRadius,
+			TraceCapsuleHalfHeight,
+			TraceChannel,
+			false,
+			ActorsToIgnore,
+			EffectiveDebugType,
+			TopSweepHitResult,
+			true,
+			FLinearColor::Red,
+			FLinearColor::Green,
+			DebugDrawDuration);
+
+		if (!bTopSweepHit)
+		{
+			// Step 3.5A : 顶部没有阻挡，障碍物深度使用 FrontLedge 到 BackLedge 的水平距离
+			InOutTraversalCheckResult.ObstacleDepth =
+				(InOutTraversalCheckResult.BackLedgeLocation - InOutTraversalCheckResult.FrontLedgeLocation).Size2D();
+
+			// Step 3.6 Back Floor Check : 从 BackLedge 上方往下扫，寻找另一侧可落脚地面
+			// 起点使用 BackLedge 的可站位点，终点向下移动障碍物高度并额外多扫一段距离，避免轻微高度差导致漏检
+			const FVector BackFloorTraceEnd =
+				HasRoomCheckBackLedgeLocation
+				- FVector::ZAxisVector * (InOutTraversalCheckResult.ObstacleHeight + TraversalSettings.BackFloorTraceExtraDistance);
+
+			FHitResult BackFloorHitResult;
+			const bool bBackFloorTraceHit = UKismetSystemLibrary::CapsuleTraceSingle(
+				this,
+				HasRoomCheckBackLedgeLocation,
+				BackFloorTraceEnd,
+				TraceCapsuleRadius,
+				TraceCapsuleHalfHeight,
+				TraceChannel,
+				false,
+				ActorsToIgnore,
+				EffectiveDebugType,
+				BackFloorHitResult,
+				true,
+				FLinearColor::Red,
+				FLinearColor::Green,
+				DebugDrawDuration);
+
+			if (bBackFloorTraceHit && BackFloorHitResult.bBlockingHit)
+			{
+				// 找到地面时记录地面位置，并计算 BackLedge 到地面的高度差
+				InOutTraversalCheckResult.bHasBackFloor = true;
+				InOutTraversalCheckResult.BackFloorLocation = BackFloorHitResult.Location;
+				InOutTraversalCheckResult.BackLedgeHeight =
+					FMath::Abs(InOutTraversalCheckResult.BackLedgeLocation.Z - BackFloorHitResult.Location.Z);
+			}
+			else
+			{
+				// 没有找到地面时让 BackFloor 失效，不判定 Traversal 失败
+				InOutTraversalCheckResult.bHasBackFloor = false;
+				InOutTraversalCheckResult.BackFloorLocation = FVector::ZeroVector;
+				InOutTraversalCheckResult.BackLedgeHeight = 0.0f;
+			}
+		}
+		else
+		{
+			// Step 3.5B : 顶部空间被挡住，障碍物深度使用 FrontLedge 到阻挡点的水平距离
+			// 同时让 BackLedge 失效，后续逻辑会把它当作没有完整另一侧边缘的 Traversal 处理
+			InOutTraversalCheckResult.ObstacleDepth =
+				(TopSweepHitResult.ImpactPoint - InOutTraversalCheckResult.FrontLedgeLocation).Size2D();
+			InOutTraversalCheckResult.bHasBackLedge = false;
+			InOutTraversalCheckResult.bHasBackFloor = false;
+		}
+	}
 
 	// Step 4.1: Send the front ledge location to the Anim BP using an interface.
 	// This transform will be used for a custom channel within the following Motion Matching search.

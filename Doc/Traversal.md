@@ -105,6 +105,7 @@ Actor
 - `AirTraceForwardDistance`：空中固定前方检测距离
 - `AirTraceEndOffset`：空中 trace 终点偏移，当前默认向上偏移 50
 - `AirTraceHalfHeight`：空中检测胶囊半高
+- `BackFloorTraceExtraDistance`：BackFloor 向下检测额外距离，避免另一侧地面略低时漏检
 - `DebugDrawLevel`：trace debug 等级，当前 `0/1` 不绘制，`2+` 按传入的 `EDrawDebugTrace::Type` 绘制
 - `DebugDrawDuration`：持续绘制时的保留时间
 - `DebugPrintColor`：Traversal 屏幕调试文本颜色

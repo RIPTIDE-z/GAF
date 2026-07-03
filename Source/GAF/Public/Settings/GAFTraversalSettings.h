@@ -12,11 +12,11 @@ struct GAF_API FGAFTraversalSettings
 
 	// Traversal 前方检测胶囊半径
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Trace", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float TraceRadius{ 30.0f };
+	float TraceCapsuleRadius{ 30.0f };
 
 	// 地面状态检测胶囊半高
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|GroundTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float GroundTraceHalfHeight{ 60.0f };
+	float GroundTraceCapsuleHalfHeight{ 60.0f };
 
 	// 地面低速时的最小前方检测距离
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|GroundTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
@@ -32,7 +32,7 @@ struct GAF_API FGAFTraversalSettings
 
 	// 空中状态检测胶囊半高
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float AirTraceHalfHeight{ 86.0f };
+	float AirTraceCapsuleHalfHeight{ 86.0f };
 	
 	// 空中状态固定前方检测距离
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
@@ -41,6 +41,10 @@ struct GAF_API FGAFTraversalSettings
 	// 空中状态终点偏移
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace")
 	FVector AirTraceEndOffset{ 0.0f, 0.0f, 50.0f };
+
+	// BackFloor 向下检测的额外距离，避免另一侧地面略低时漏检
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Trace", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float BackFloorTraceExtraDistance{ 50.0f };
 
 	// 是否用角色配置覆盖 Project Settings 中的 Traversal Trace Channel
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Collision")
