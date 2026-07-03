@@ -400,6 +400,7 @@ void AGAFCharacterCore::RefreshCrouchFromInputState()
 // 空中：固定短距离，往前上方查，检测胶囊较高
 FGAFTraversalCheckInputs AGAFCharacterCore::GetTraversalCheckInputs() const
 {
+	// 获取配置数据
 	const FGAFTraversalSettings& TraversalSettings = GetDefaultCharacterSettings().TraversalSettings;
 
 	FGAFTraversalCheckInputs Inputs;

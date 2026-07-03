@@ -4,6 +4,7 @@
 #include "Traversal/GAFTraversalCollisionResolver.h"
 #include "Traversal/GAFTraversableLedgeProviderComponent.h"
 #include "Animation/AnimationTypes.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -47,7 +48,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		return false;
 	}
 
-	// 优先使用角色配置覆盖的 TraceChannel，否则回退到项目级 TraversalConfig。
+	// 优先使用角色配置覆盖的 TraceChannel，否则回退到项目级 TraversalConfig
 	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel(&TraversalSettings);
 
 	// Step 1 : 通过接口获取翻越所需数据
@@ -66,21 +67,27 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	const FVector ActorLocation = Character->GetActorLocation();
 
-	// Step 2.1 : 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
+	// Step 2.1 Traversable Object Search: 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
 	// 如果找到了，就设置 Hit Component, 反之退出并返回失败原因
+	
+	// 2.1.1 起点 = 角色位置 + 起点偏移值
 	const FVector TraceStart = ActorLocation + Inputs.TraceOriginOffset;
+	
+	// 2.1.2 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
 	const FVector TraceEnd =
 		TraceStart
 		+ Inputs.TraceForwardDirection * Inputs.TraceForwardDistance
 		+ Inputs.TraceEndOffset;
 
+	// 忽略自身
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(Character);
 
-	FHitResult Hit;
+	FHitResult TraversableObjectHitResult;
 	const EDrawDebugTrace::Type EffectiveDebugType =
 		TraversalSettings.DebugDrawLevel >= 2 ? DebugType : EDrawDebugTrace::None;
 
+	// 2.1.3 使用 Capsule Trace
 	const bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(
 		this,
 		TraceStart,
@@ -91,10 +98,10 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		false,
 		ActorsToIgnore,
 		EffectiveDebugType,
-		Hit,
+		TraversableObjectHitResult,
 		true,
-		FLinearColor::Red,
-		FLinearColor::Green,
+		FLinearColor::Black,
+		FLinearColor::Black,
 		TraversalSettings.DebugDrawDuration);
 
 	if (!bHit)
@@ -103,23 +110,115 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		return false;
 	}
 
-	AActor* HitActor = Hit.GetActor();
-	const UGAFTraversableLedgeProviderComponent* TraversableProvider =
-		IsValid(HitActor)
-		? HitActor->FindComponentByClass<UGAFTraversableLedgeProviderComponent>()
-		: nullptr;
+	const AActor* HitActor = TraversableObjectHitResult.GetActor();
+	if (!IsValid(HitActor))
+	{
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		return false;
+	}
 
+	TArray<UGAFTraversableLedgeProviderComponent*> TraversableProviders;
+	HitActor->GetComponents<UGAFTraversableLedgeProviderComponent>(TraversableProviders);
+
+	if (TraversableProviders.IsEmpty())
+	{
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		return false;
+	}
+
+	if (TraversableProviders.Num() > 1)
+	{
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
+		UE_LOG(LogGAFTraversal, Warning,
+			TEXT("%s failed to try traversal action: hit actor [%s] has multiple TraversableLedgeProvider components. Only one provider is allowed per traversable actor."),
+			*GetNameSafe(this),
+			*GetNameSafe(HitActor));
+		return false;
+	}
+
+	const UGAFTraversableLedgeProviderComponent* TraversableProvider = TraversableProviders[0];
 	if (!IsValid(TraversableProvider))
 	{
 		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindTraversableObject;
 		return false;
 	}
 
-	OutResult.HitComponent = Hit.GetComponent();
+	OutResult.HitComponent = TraversableObjectHitResult.GetComponent();
 
-	// Step 2.2 : If a traversable level block was found, get the front and back ledge transforms from it (using its own internal function).
+	// Step 2.2 Get Ledge : 如果检测到了可翻越物体，调用其内部函数找到Front/Back Ledge
+	FGAFTraversalCheckResult InOutTraversalCheckResult = FGAFTraversalCheckResult{};
+	bool bGetLedge = TraversableProvider->GetLedgeTransforms(TraversableObjectHitResult.ImpactPoint, ActorLocation, InOutTraversalCheckResult);
+	OutResult = InOutTraversalCheckResult;
+	OutResult.HitComponent = TraversableObjectHitResult.GetComponent();
+	
+	// DEBUG(Step2): Draw Debug shapes at ledge locations.
+	if (TraversalSettings.DebugDrawLevel >= 1)
+	{
+		UWorld* World = GetWorld();
+		if (IsValid(World))
+		{
+			if (OutResult.bHasFrontLedge)
+			{
+				DrawDebugSphere(
+					World,
+					OutResult.FrontLedgeLocation,
+					10.0f,
+					12,
+					FColor::Green,
+					false,
+					TraversalSettings.DebugDrawDuration,
+					0,
+					1.0f);
+			}
 
-	// DEBUG: Draw Debug shapes at ledge locations.
+			if (OutResult.bHasBackLedge)
+			{
+				DrawDebugSphere(
+					World,
+					OutResult.BackLedgeLocation,
+					10.0f,
+					12,
+					FColor::Blue,
+					false,
+					TraversalSettings.DebugDrawDuration,
+					0,
+					1.0f);
+			}
+		}
+	}
+
+	// 打印失败原因
+	if (!bGetLedge)
+	{
+		// 拿到 UE 的 enum 反射对象
+		const UEnum* FailureReasonEnum = StaticEnum<EGAFTraversalFailureReason>();
+
+		const FString FailureReasonString = FailureReasonEnum
+			? FailureReasonEnum->GetNameStringByValue(static_cast<int64>(OutResult.FailureReason))
+			: TEXT("Unknown");
+
+		const FString DebugString = FString::Printf(
+			TEXT("%s failed to get traversal ledge from [%s]. FailureReason: %s."),
+			*GetNameSafe(this),
+			*GetNameSafe(HitActor),
+			*FailureReasonString
+		);
+
+		if (TraversalSettings.DebugDrawLevel >= 1)
+		{
+			UKismetSystemLibrary::PrintString(
+				this,
+				DebugString,
+				true,
+				false,
+				FLinearColor(0.f, 0.8f, 1.f, 1.f),
+				2.0f,
+				FName(TEXT("Traversal1"))
+			);
+		}
+
+		return false;
+	}
 
 	// Step 3.1 If the traversable level block has a valid front ledge, continue the function. If not, exit early.
 

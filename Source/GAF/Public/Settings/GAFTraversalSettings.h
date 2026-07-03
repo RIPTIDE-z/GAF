@@ -30,6 +30,10 @@ struct GAF_API FGAFTraversalSettings
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|GroundTrace", meta = (ClampMin = "1.0", UIMin = "1.0"))
 	float GroundMaxTraceForwardSpeed{ 500.0f };
 
+	// 空中状态检测胶囊半高
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float AirTraceHalfHeight{ 86.0f };
+	
 	// 空中状态固定前方检测距离
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float AirTraceForwardDistance{ 75.0f };
@@ -37,10 +41,6 @@ struct GAF_API FGAFTraversalSettings
 	// 空中状态终点偏移
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace")
 	FVector AirTraceEndOffset{ 0.0f, 0.0f, 50.0f };
-
-	// 空中状态检测胶囊半高
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|AirTrace", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float AirTraceHalfHeight{ 86.0f };
 
 	// 是否用角色配置覆盖 Project Settings 中的 Traversal Trace Channel
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Collision")
