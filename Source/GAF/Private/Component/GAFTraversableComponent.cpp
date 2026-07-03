@@ -19,6 +19,8 @@ void UGAFTraversableComponent::BeginPlay()
 	RefreshResolvedLedgePairs();
 }
 
+// 找到可供翻越的边缘数据并写入CheckResult
+// TODO:细化失败原因
 bool UGAFTraversableComponent::GetLedgeTransforms(
 	const FVector& HitLocation,
 	const FVector& ActorLocation,
@@ -29,6 +31,7 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 	FGAFResolvedTraversableLedgeSelection Selection;
 	if (!FindLedgeClosestToActor(ActorLocation, Selection))
 	{
+		InOutCheckResult.FailureReason = EGAFTraversalFailureReason::TraversalCheckFailed;
 		InOutCheckResult.bHasFrontLedge = false;
 		InOutCheckResult.bHasBackLedge = false;
 		return false;
@@ -38,6 +41,7 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 	// 至少需要找到一条边
 	if (!IsValid(FrontLedge))
 	{
+		InOutCheckResult.FailureReason = EGAFTraversalFailureReason::TraversalCheckFailed;
 		InOutCheckResult.bHasFrontLedge = false;
 		InOutCheckResult.bHasBackLedge = false;
 		return false;
@@ -73,6 +77,148 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 		InOutCheckResult.BackLedgeLocation + InOutCheckResult.BackLedgeLocation - InOutCheckResult.FrontLedgeLocation);
 
 	return true;
+}
+
+
+
+// 遍历所有可用边缘，找到离角色最近的一条作为 FrontLedge，在同一组的就是 BackLedge
+bool UGAFTraversableComponent::FindLedgeClosestToActor(
+	const FVector& ActorLocation,
+	FGAFResolvedTraversableLedgeSelection& OutSelection) const
+{
+	// 选择结果缓存
+	OutSelection = FGAFResolvedTraversableLedgeSelection{};
+
+	if (ResolvedLedgePairs.IsEmpty())
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Cannot find any enabled LedgePairs in [%s]."), *GetNameSafe(this));
+		return false;
+	}
+
+	// 对比就是简单的遍历对比距离，最小距离更新到 ClosestDistanceSq
+	// 先用一个最大数初始化 ClosestDistance，确保第一次更新起效
+	float ClosestDistanceSq{ TNumericLimits<float>::Max() };
+
+	// 遍历每对Pair并尝试更新最佳结果
+	for (const FGAFResolvedTraversableLedgePair& Pair : ResolvedLedgePairs)
+	{
+		TryUpdateClosestLedgeFromPair(Pair, ActorLocation, ClosestDistanceSq, OutSelection);
+	}
+
+	return IsValid(OutSelection.FrontLedge.Get());
+}
+
+// Pair内部对每条边进行对比，判断是否能作为最近的边缘
+bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
+	const FGAFResolvedTraversableLedgePair& Pair,
+	const FVector& ActorLocation,
+	float& InOutClosestDistanceSq,
+	FGAFResolvedTraversableLedgeSelection& OutSelection) const
+{
+	UGAFTraversableLedgeSplineComponent* FirstLedge = Pair.FirstLedge.Get();
+	UGAFTraversableLedgeSplineComponent* SecondLedge = Pair.SecondLedge.Get();
+	
+	FGAFTraversablePairCandidate PairCandidate;
+
+	// Pair 本身不固定 front/back，两条边都尝试更新后保留 Pair 内更近的结果
+	// 同时传入两条边方便选出 Front 后对应出 Back
+	TryUpdatePairCandidate(FirstLedge, SecondLedge, ActorLocation, PairCandidate);
+	TryUpdatePairCandidate(SecondLedge, FirstLedge, ActorLocation, PairCandidate);
+
+	// 如果这对 Pair 的最小距离大于已有候选 Pair 则不更新
+	if (!PairCandidate.bHasCandidate || PairCandidate.DistanceSq >= InOutClosestDistanceSq)
+	{
+		return false;
+	}
+
+	// 当前 Pair 更佳，写入更新结果
+	InOutClosestDistanceSq = PairCandidate.DistanceSq;
+	OutSelection.FrontLedge = PairCandidate.FrontLedge;
+	OutSelection.BackLedge = PairCandidate.BackLedge;
+	OutSelection.FrontInputKey = PairCandidate.FrontInputKey;
+	OutSelection.BackInputKey = PairCandidate.BackInputKey;
+
+	return true;
+}
+
+// 尝试将 Pair 内的一条 Spline 作为 FrontLedge 候选
+// CandidateFront 是当前尝试面对角色的一侧，CandidateBack 是它配对的另一侧
+// 如果 CandidateFront 比当前 PairCandidate 更近，则覆盖 PairCandidate
+void UGAFTraversableComponent::TryUpdatePairCandidate(
+	UGAFTraversableLedgeSplineComponent* CandidateFront,
+	UGAFTraversableLedgeSplineComponent* CandidateBack,
+	const FVector& ActorLocation,
+	FGAFTraversablePairCandidate& InOutPairCandidate) const
+{
+	if (!IsValid(CandidateFront) || !CandidateFront->bEnabled || CandidateFront->GetNumberOfSplinePoints() <= 0)
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Cant UpdatePairCandidate in [%s], CandidateFront is invalid"), *GetNameSafe(this));
+		return;
+	}
+
+	// 找到角色位置投影到 CandidateFront 上的最近点
+	const float FrontInputKey = CandidateFront->FindInputKeyClosestToWorldLocation(ActorLocation);
+	const FVector FrontLocation = CandidateFront->GetLocationAtSplineInputKey(
+		FrontInputKey,
+		ESplineCoordinateSpace::World);
+
+	// 按角色到 Spline 最近点的 2D 距离选择 FrontLedge
+	const float DistanceSq = FVector::DistSquared2D(ActorLocation, FrontLocation);
+	// 如果已有候选 Front 且当前距离比候选者大就不进行更新
+	if (InOutPairCandidate.bHasCandidate && DistanceSq >= InOutPairCandidate.DistanceSq)
+	{
+		return;
+	}
+
+	// 当前候选是这个 pair 内目前更近的一侧，更新临时结果
+	InOutPairCandidate.bHasCandidate = true;
+	InOutPairCandidate.FrontLedge = CandidateFront;
+	// Back 就是 Pair 内对应的另一边
+	InOutPairCandidate.BackLedge = CandidateBack;
+	InOutPairCandidate.FrontInputKey = FrontInputKey;
+	InOutPairCandidate.BackInputKey = 0.0f;
+	InOutPairCandidate.DistanceSq = DistanceSq;
+
+	if (IsValid(CandidateBack) && CandidateBack->bEnabled && CandidateBack->GetNumberOfSplinePoints() > 0)
+	{
+		// 用 FrontLedge 上的归一化距离映射到 BackLedge，保证成对边缘的前后位置对应
+		// 例如 FrontLedge 上 30% 的位置，会对应到 BackLedge 上 30% 的位置
+		const float FrontLength = FMath::Max(CandidateFront->GetSplineLength(), KINDA_SMALL_NUMBER);
+		const float FrontDistance = CandidateFront->GetDistanceAlongSplineAtSplineInputKey(FrontInputKey);
+		const float NormalizedDistance = FMath::Clamp(FrontDistance / FrontLength, 0.0f, 1.0f);
+		InOutPairCandidate.BackInputKey = CandidateBack->GetInputKeyAtDistanceAlongSpline(
+			NormalizedDistance * CandidateBack->GetSplineLength());
+	}
+}
+
+FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
+	const UGAFTraversableLedgeSplineComponent& Ledge,
+	const float InputKey,
+	const FVector& TargetLocation)
+{
+	// 默认把 spline 在该点的 RightVector 当作 ledge 法线
+	// 这要求编辑 ledge spline 时保持局部右方向大致垂直于边缘
+	FVector Normal = Ledge.GetRightVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
+	const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
+
+	// 只比较水平面方向，避免角色和 ledge 的高度差影响法线朝向判断
+	FVector DirectionToTarget = TargetLocation - LedgeLocation;
+	DirectionToTarget.Z = 0.0f;
+
+	if (DirectionToTarget.IsNearlyZero())
+	{
+		// 目标点几乎就在 ledge 点上时无法判断朝向，返回 spline 自身法线
+		return Normal;
+	}
+
+	// 如果默认法线背对目标点，就翻转它，保证返回值始终朝向 TargetLocation 所在侧
+	DirectionToTarget.Normalize();
+	if (FVector::DotProduct(Normal, DirectionToTarget) < 0.0f)
+	{
+		Normal *= -1.0f;
+	}
+
+	return Normal;
 }
 
 // 将编辑器里的 LedgePairs 解析为运行时组件指针
@@ -133,137 +279,4 @@ UGAFTraversableLedgeSplineComponent* UGAFTraversableComponent::ResolveLedgeSplin
 
 	// 将组件引用解析为组件指针
 	return Cast<UGAFTraversableLedgeSplineComponent>(Reference.GetComponent(Owner));
-}
-
-// 遍历所有可用边缘，找到离角色最近的一条作为 FrontLedge，在同一组的就是 BackLedge
-bool UGAFTraversableComponent::FindLedgeClosestToActor(
-	const FVector& ActorLocation,
-	FGAFResolvedTraversableLedgeSelection& OutSelection) const
-{
-	// 缓存选择结果
-	OutSelection = FGAFResolvedTraversableLedgeSelection{};
-
-	if (ResolvedLedgePairs.IsEmpty())
-	{
-		UE_LOG(LogGAFTraversal, Warning, TEXT("Cannot find any enabled LedgePairs in [%s]."), *GetNameSafe(this));
-		return false;
-	}
-
-	float ClosestDistanceSq{ TNumericLimits<float>::Max() };
-
-	// 遍历每对Pair并尝试更新最佳结果
-	for (const FGAFResolvedTraversableLedgePair& Pair : ResolvedLedgePairs)
-	{
-		TryUpdateClosestLedgeFromPair(Pair, ActorLocation, ClosestDistanceSq, OutSelection);
-	}
-
-	return IsValid(OutSelection.FrontLedge.Get());
-}
-
-// Pair内部对每条边进行对比，判断是否能作为最近的边缘
-bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
-	const FGAFResolvedTraversableLedgePair& Pair,
-	const FVector& ActorLocation,
-	float& InOutClosestDistanceSq,
-	FGAFResolvedTraversableLedgeSelection& OutSelection) const
-{
-	UGAFTraversableLedgeSplineComponent* FirstLedge = Pair.FirstLedge.Get();
-	UGAFTraversableLedgeSplineComponent* SecondLedge = Pair.SecondLedge.Get();
-
-	FGAFTraversablePairCandidate PairCandidate;
-
-	// Pair 本身不固定 front/back，两条边都尝试更新后保留 Pair 内更近的结果
-	TryUpdatePairCandidate(FirstLedge, SecondLedge, ActorLocation, PairCandidate);
-	TryUpdatePairCandidate(SecondLedge, FirstLedge, ActorLocation, PairCandidate);
-
-	if (!PairCandidate.bHasCandidate || PairCandidate.DistanceSq >= InOutClosestDistanceSq)
-	{
-		UE_LOG(LogGAFTraversal, Warning, TEXT("Cannot find any enabled LedgePairs in [%s]."), *GetNameSafe(this));
-		return false;
-	}
-
-	InOutClosestDistanceSq = PairCandidate.DistanceSq;
-	OutSelection.FrontLedge = PairCandidate.FrontLedge;
-	OutSelection.BackLedge = PairCandidate.BackLedge;
-	OutSelection.FrontInputKey = PairCandidate.FrontInputKey;
-	OutSelection.BackInputKey = PairCandidate.BackInputKey;
-
-	return true;
-}
-
-// 尝试将 Pair 内的一条 Spline 作为 FrontLedge 候选
-// CandidateFront 是当前尝试面对角色的一侧，CandidateBack 是它配对的另一侧
-// 如果 CandidateFront 比当前 PairCandidate 更近，则覆盖 PairCandidate
-void UGAFTraversableComponent::TryUpdatePairCandidate(
-	UGAFTraversableLedgeSplineComponent* CandidateFront,
-	UGAFTraversableLedgeSplineComponent* CandidateBack,
-	const FVector& ActorLocation,
-	FGAFTraversablePairCandidate& InOutPairCandidate) const
-{
-	if (!IsValid(CandidateFront) || !CandidateFront->bEnabled || CandidateFront->GetNumberOfSplinePoints() <= 0)
-	{
-		return;
-	}
-
-	// 找到角色位置投影到 CandidateFront 上的最近点
-	const float FrontInputKey = CandidateFront->FindInputKeyClosestToWorldLocation(ActorLocation);
-	const FVector FrontLocation = CandidateFront->GetLocationAtSplineInputKey(
-		FrontInputKey,
-		ESplineCoordinateSpace::World);
-
-	// 按角色到 spline 最近点的 2D 距离选择 FrontLedge
-	const float DistanceSq = FVector::DistSquared2D(ActorLocation, FrontLocation);
-	if (InOutPairCandidate.bHasCandidate && DistanceSq >= InOutPairCandidate.DistanceSq)
-	{
-		return;
-	}
-
-	// 当前候选是这个 pair 内目前更近的一侧，更新临时结果
-	InOutPairCandidate.bHasCandidate = true;
-	InOutPairCandidate.FrontLedge = CandidateFront;
-	InOutPairCandidate.BackLedge = CandidateBack;
-	InOutPairCandidate.FrontInputKey = FrontInputKey;
-	InOutPairCandidate.BackInputKey = 0.0f;
-	InOutPairCandidate.DistanceSq = DistanceSq;
-
-	if (IsValid(CandidateBack) && CandidateBack->bEnabled && CandidateBack->GetNumberOfSplinePoints() > 0)
-	{
-		// 用 FrontLedge 上的归一化距离映射到 BackLedge，保证成对边缘的前后位置对应
-		// 例如 FrontLedge 上 30% 的位置，会对应到 BackLedge 上 30% 的位置
-		const float FrontLength = FMath::Max(CandidateFront->GetSplineLength(), KINDA_SMALL_NUMBER);
-		const float FrontDistance = CandidateFront->GetDistanceAlongSplineAtSplineInputKey(FrontInputKey);
-		const float NormalizedDistance = FMath::Clamp(FrontDistance / FrontLength, 0.0f, 1.0f);
-		InOutPairCandidate.BackInputKey = CandidateBack->GetInputKeyAtDistanceAlongSpline(
-			NormalizedDistance * CandidateBack->GetSplineLength());
-	}
-}
-
-FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
-	const UGAFTraversableLedgeSplineComponent& Ledge,
-	const float InputKey,
-	const FVector& TargetLocation)
-{
-	// 默认把 spline 在该点的 RightVector 当作 ledge 法线
-	// 这要求编辑 ledge spline 时保持局部右方向大致垂直于边缘
-	FVector Normal = Ledge.GetRightVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
-	const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
-
-	// 只比较水平面方向，避免角色和 ledge 的高度差影响法线朝向判断
-	FVector DirectionToTarget = TargetLocation - LedgeLocation;
-	DirectionToTarget.Z = 0.0f;
-
-	if (DirectionToTarget.IsNearlyZero())
-	{
-		// 目标点几乎就在 ledge 点上时无法判断朝向，返回 spline 自身法线
-		return Normal;
-	}
-
-	// 如果默认法线背对目标点，就翻转它，保证返回值始终朝向 TargetLocation 所在侧
-	DirectionToTarget.Normalize();
-	if (FVector::DotProduct(Normal, DirectionToTarget) < 0.0f)
-	{
-		Normal *= -1.0f;
-	}
-
-	return Normal;
 }

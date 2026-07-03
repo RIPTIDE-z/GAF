@@ -52,8 +52,10 @@ struct FGAFResolvedTraversableLedgeSelection
 struct FGAFTraversablePairCandidate
 {
 	bool bHasCandidate{ false };
+	
 	UGAFTraversableLedgeSplineComponent* FrontLedge{ nullptr };
 	UGAFTraversableLedgeSplineComponent* BackLedge{ nullptr };
+	
 	float FrontInputKey{ 0.0f };
 	float BackInputKey{ 0.0f };
 	float DistanceSq{ 0.0f };
