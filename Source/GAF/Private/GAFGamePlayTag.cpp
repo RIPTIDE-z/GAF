@@ -3,7 +3,7 @@
 namespace GAFGamePlayTags
 {
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag, "GAF.InputTag", "InputTag Root");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "GAF.InputTag.Move", "Move input");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move_WorldSpace, "GAF.InputTag.Move.WorldSpace", "World-space move input, useful for debug");
 
@@ -17,7 +17,7 @@ namespace GAFGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Aim, "GAF.InputTag.Aim", "Aim input");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_ChangeRotationMode, "GAF.InputTag.ChangeRotationMode", "Change rotation mode input");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait, "GAF.Gait", "Gait Root");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait_Walk, "GAF.Gait.Walk", "Walking");
@@ -29,20 +29,20 @@ namespace GAFGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stance_Crouch, "GAF.Stance.Crouch", "Crouching");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode, "GAF.MovementMode", "MovementMode Root");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_OnGround, "GAF.MovementMode.OnGround", "MovementMode - OnGround");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_InAir, "GAF.MovementMode.InAir", "MovementMode - InAir");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_Sliding, "GAF.MovementMode.Sliding", "MovementMode - Sliding");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_Traversing, "GAF.MovementMode.Traversing", "MovementMode - Traversing");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode, "GAF.RotationMode", "RotationMode Root");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode_OrientToMovement, "GAF.RotationMode.OrientToMovement", "RotationMode - OrientToMovement");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode_Strafe, "GAF.RotationMode.Strafe", "RotationMode - Strafe");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode_Aim, "GAF.RotationMode.Aim", "RotationMode - Aim");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputState, "GAF.InputState", "InputState Root");
-	
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputState_WantsToSprint, "GAF.InputState.WantsToSprint", "Player wants to Sprint");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputState_WantsToWalk, "GAF.InputState.WantsToWalk", "Player wants to Walk");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputState_WantsToStrafe, "GAF.InputState.WantsToStrafe", "Player wants to Strafe");

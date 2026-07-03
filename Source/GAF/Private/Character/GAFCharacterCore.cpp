@@ -137,7 +137,7 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 	OutData.Mesh = MeshComponent;
 	OutData.MotionWarping = MotionWarping;
 	OutData.Speed = CMC->Velocity.Size2D();
-	
+
 	// TODO:这里基于现有方案进行了一次重复的Gait计算，应该想办法与CMC的更新结合减少计算次数
 	OutData.Gait = CalculateMaxAllowedGait();
 

@@ -1,3 +1,8 @@
+/**
+ * 将 GASP里的 LevelBlock_Traversable的可攀爬特性单独抽离为一个组件
+ * 并将原本硬编码 Map来对应 Front/Back 的方法拓展为使用自定义 Pair 结构对应
+ * 编辑器中使用 FComponentReference，运行时在 BeginPlay 统一解析为实际引用
+ */
 #pragma once
 
 #include "CoreMinimal.h"
@@ -16,17 +21,15 @@ USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversableLedgePair
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bEnabled{ true };
 
 	// 使用 FComponentReference 以在编辑器中选择同一个 Actor 上的 LedgeSpline 组件
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal",
-		meta = (UseComponentPicker, AllowedClasses = "/Script/GAF.GAFTraversableLedgeSplineComponent", AllowAnyActor = "false"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal", meta = (UseComponentPicker, AllowedClasses = "/Script/GAF.GAFTraversableLedgeSplineComponent", AllowAnyActor = "false"))
 	FComponentReference FirstLedge;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal",
-		meta = (UseComponentPicker, AllowedClasses = "/Script/GAF.GAFTraversableLedgeSplineComponent", AllowAnyActor = "false"))
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal", meta = (UseComponentPicker, AllowedClasses = "/Script/GAF.GAFTraversableLedgeSplineComponent", AllowAnyActor = "false"))
 	FComponentReference SecondLedge;
 };
 
@@ -52,10 +55,10 @@ struct FGAFResolvedTraversableLedgeSelection
 struct FGAFTraversablePairCandidate
 {
 	bool bHasCandidate{ false };
-	
+
 	UGAFTraversableLedgeSplineComponent* FrontLedge{ nullptr };
 	UGAFTraversableLedgeSplineComponent* BackLedge{ nullptr };
-	
+
 	float FrontInputKey{ 0.0f };
 	float BackInputKey{ 0.0f };
 	float DistanceSq{ 0.0f };
@@ -82,10 +85,10 @@ public:
 protected:
 	void RefreshResolvedLedgePairs();
 	void GetLedgeSplines(TArray<UGAFTraversableLedgeSplineComponent*>& OutSplines) const;
-	
+
 	// 将编辑器里的组件引用转换为运行时可用的组件指针
 	UGAFTraversableLedgeSplineComponent* ResolveLedgeSpline(const FComponentReference& Reference) const;
-	
+
 	// 遍历所有 ledge pair，选出离角色最近的一条作为 FrontLedge
 	bool FindLedgeClosestToActor(
 		const FVector& ActorLocation,

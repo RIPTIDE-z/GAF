@@ -79,8 +79,6 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 	return true;
 }
 
-
-
 // 遍历所有可用边缘，找到离角色最近的一条作为 FrontLedge，在同一组的就是 BackLedge
 bool UGAFTraversableComponent::FindLedgeClosestToActor(
 	const FVector& ActorLocation,
@@ -96,6 +94,7 @@ bool UGAFTraversableComponent::FindLedgeClosestToActor(
 	}
 
 	// 对比就是简单的遍历对比距离，最小距离更新到 ClosestDistanceSq
+	// 使用平方值，只比较大小不需要开根
 	// 先用一个最大数初始化 ClosestDistance，确保第一次更新起效
 	float ClosestDistanceSq{ TNumericLimits<float>::Max() };
 
@@ -117,7 +116,7 @@ bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
 {
 	UGAFTraversableLedgeSplineComponent* FirstLedge = Pair.FirstLedge.Get();
 	UGAFTraversableLedgeSplineComponent* SecondLedge = Pair.SecondLedge.Get();
-	
+
 	FGAFTraversablePairCandidate PairCandidate;
 
 	// Pair 本身不固定 front/back，两条边都尝试更新后保留 Pair 内更近的结果
@@ -162,8 +161,21 @@ void UGAFTraversableComponent::TryUpdatePairCandidate(
 		FrontInputKey,
 		ESplineCoordinateSpace::World);
 
-	// 按角色到 Spline 最近点的 2D 距离选择 FrontLedge
-	const float DistanceSq = FVector::DistSquared2D(ActorLocation, FrontLocation);
+	// 暂时与 GASP 的 FindLedgeClosestToActor 逻辑保持一致
+	// 用朝向角色侧(可攀爬侧)的法线给最近点一个小偏移，减少拐角或端点重合时的选择抖动
+	// 比如两个 Spline 在端点重合，从对着端点测开始检测就会出现距离一样的情况
+	// 这时候把端点往朝角色所在侧轻轻推 10cm，再比较距离，更偏向角色的点距离会更小
+	// 先抽离为单独函数，后面尝试拓展逻辑
+	const FVector FrontNormal = GetLedgeNormalFacingLocation(
+		*CandidateFront,
+		FrontInputKey,
+		ActorLocation);
+	constexpr float SelectionNormalOffset{ 10.0f };
+	// 把点向法线方向偏移一段距离
+	const FVector AdjustedFrontLocation = FrontLocation + FrontNormal * SelectionNormalOffset;
+	// 取偏移后的距离
+	const float DistanceSq = FVector::DistSquared2D(ActorLocation, AdjustedFrontLocation);
+
 	// 如果已有候选 Front 且当前距离比候选者大就不进行更新
 	if (InOutPairCandidate.bHasCandidate && DistanceSq >= InOutPairCandidate.DistanceSq)
 	{
@@ -191,32 +203,33 @@ void UGAFTraversableComponent::TryUpdatePairCandidate(
 	}
 }
 
+// 返回 InputKey 在 Ledge 上偏向 TargetLocation 侧的法线
 FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
 	const UGAFTraversableLedgeSplineComponent& Ledge,
 	const float InputKey,
 	const FVector& TargetLocation)
 {
-	// 默认把 spline 在该点的 RightVector 当作 ledge 法线
-	// 这要求编辑 ledge spline 时保持局部右方向大致垂直于边缘
-	FVector Normal = Ledge.GetRightVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
-	const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
+	// 默认把 Spline 在该点的 UpVector 当作 ledge 法线
+	// 这要求编辑 Spline 时保持局部上方向(Z)指向边缘的可攀爬侧
+	// 不过 SplineComponent 也可以在 Detail 设置 Default Up Vector，不一定强制要求 Z
+	// TODO: 尝试放宽Spline编辑要求
+	FVector Normal = Ledge.GetUpVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
 
-	// 只比较水平面方向，避免角色和 ledge 的高度差影响法线朝向判断
-	FVector DirectionToTarget = TargetLocation - LedgeLocation;
-	DirectionToTarget.Z = 0.0f;
-
-	if (DirectionToTarget.IsNearlyZero())
-	{
-		// 目标点几乎就在 ledge 点上时无法判断朝向，返回 spline 自身法线
-		return Normal;
-	}
-
-	// 如果默认法线背对目标点，就翻转它，保证返回值始终朝向 TargetLocation 所在侧
-	DirectionToTarget.Normalize();
-	if (FVector::DotProduct(Normal, DirectionToTarget) < 0.0f)
-	{
-		Normal *= -1.0f;
-	}
+	// // 这里可以做根据点到角色方向的自动翻转机制，但是会破坏 “ 边缘只有一侧可攀爬 ” 的语义
+	// const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
+	//
+	// // Ledge 点到目标点的方向
+	// // 只比较水平面方向，避免角色和 Ledge 的高度差影响法线朝向判断
+	// FVector DirectionToTarget = TargetLocation - LedgeLocation;
+	// DirectionToTarget.Z = 0.0f;
+	//
+	// // 如果默认法线背对目标点，就翻转它，保证返回值始终朝向 TargetLocation 所在侧
+	// DirectionToTarget.Normalize();
+	// // 使用点积判断
+	// if (FVector::DotProduct(Normal, DirectionToTarget) < 0.0f)
+	// {
+	// 	Normal *= -1.0f;
+	// }
 
 	return Normal;
 }
