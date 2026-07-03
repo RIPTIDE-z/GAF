@@ -26,8 +26,8 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 	const FVector& ActorLocation,
 	FGAFTraversalCheckResult& InOutCheckResult) const
 {
-	(void)HitLocation;
 
+	// Step 1 尝试找到离角色最近的 Ledge
 	FGAFResolvedTraversableLedgeSelection Selection;
 	if (!FindLedgeClosestToActor(ActorLocation, Selection))
 	{
@@ -47,15 +47,33 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 		return false;
 	}
 
-	// 写入角色当前面对的边缘
+	// Step 2 保证 Ledge 长度足够
+	if (FrontLedge->GetSplineLength() < MinLedgeWidth)
+	{
+		InOutCheckResult.FailureReason = EGAFTraversalFailureReason::TraversalCheckFailed;
+		InOutCheckResult.bHasFrontLedge = false;
+		InOutCheckResult.bHasBackLedge = false;
+		return false;
+	}
+
+	// Step 3 对距离角色最近的点的位置进行限制，使它不能太靠近边缘的端点
+	// 这里是让角色不能抓在 ledge 的最边缘位置，必须离边缘端点保留一段安全距离
+	// 防止角色在靠近拐角处进行翻越时出现悬空
+	// 限制后的边缘位置始终会距离边缘端点至少半个 “ 最小边缘宽度 ”
+	// 如果最小边缘宽度是 60 单位，那么边缘位置就始终会距离拐角至少 30 单位
+	const FVector ClosestFrontLedgeLocationLocal = FrontLedge->FindLocationClosestToWorldLocation(HitLocation, ESplineCoordinateSpace::Local);
+	const float ClosestFrontLedgeDistance = FrontLedge->GetDistanceAlongSplineAtLocation(ClosestFrontLedgeLocationLocal, ESplineCoordinateSpace::Local);
+
+	const float HalfMinLedgeWidth = MinLedgeWidth * 0.5f;
+	// 限制距离
+	const float ClampedFrontLedgeDistance = FMath::Clamp(ClosestFrontLedgeDistance, HalfMinLedgeWidth, FrontLedge->GetSplineLength() - HalfMinLedgeWidth);
+	// 按限制后距离作为 Distance 重新取点
+	const FTransform FrontLedgeTransform = FrontLedge->GetTransformAtDistanceAlongSpline(ClampedFrontLedgeDistance, ESplineCoordinateSpace::World, false);
+
+	// 将 FrontLedge 写入结果
 	InOutCheckResult.bHasFrontLedge = true;
-	InOutCheckResult.FrontLedgeLocation = FrontLedge->GetLocationAtSplineInputKey(
-		Selection.FrontInputKey,
-		ESplineCoordinateSpace::World);
-	InOutCheckResult.FrontLedgeNormal = GetLedgeNormalFacingLocation(
-		*FrontLedge,
-		Selection.FrontInputKey,
-		ActorLocation);
+	InOutCheckResult.FrontLedgeLocation = FrontLedgeTransform.GetLocation();
+	InOutCheckResult.FrontLedgeNormal = FrontLedgeTransform.GetRotation().GetUpVector();
 
 	const UGAFTraversableLedgeSplineComponent* BackLedge = Selection.BackLedge.Get();
 	if (!IsValid(BackLedge))
@@ -65,16 +83,15 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 		return true;
 	}
 
-	// BackLedge 使用与 FrontLedge 相同的归一化 spline 位置，保持前后边缘对应
+	// Step 4 从 FrontLedgeLocation 出发，在配对的 BackLedge 上找最近的点作为 BackLedge 位置
+	const FTransform BackLedgeTransform = BackLedge->FindTransformClosestToWorldLocation(
+		InOutCheckResult.FrontLedgeLocation,
+		ESplineCoordinateSpace::World,
+		false);
+
 	InOutCheckResult.bHasBackLedge = true;
-	InOutCheckResult.BackLedgeLocation = BackLedge->GetLocationAtSplineInputKey(
-		Selection.BackInputKey,
-		ESplineCoordinateSpace::World);
-	InOutCheckResult.BackLedgeNormal = GetLedgeNormalFacingLocation(
-		*BackLedge,
-		Selection.BackInputKey,
-		// 使用 front -> back 的延长方向，让 back normal 朝向障碍物另一侧
-		InOutCheckResult.BackLedgeLocation + InOutCheckResult.BackLedgeLocation - InOutCheckResult.FrontLedgeLocation);
+	InOutCheckResult.BackLedgeLocation = BackLedgeTransform.GetLocation();
+	InOutCheckResult.BackLedgeNormal = BackLedgeTransform.GetRotation().GetUpVector();
 
 	return true;
 }
@@ -93,7 +110,7 @@ bool UGAFTraversableComponent::FindLedgeClosestToActor(
 		return false;
 	}
 
-	// 对比就是简单的遍历对比距离，最小距离更新到 ClosestDistanceSq
+	// 遍历所有 Spline 并对比距离，最小距离更新到 ClosestDistanceSq
 	// 使用平方值，只比较大小不需要开根
 	// 先用一个最大数初始化 ClosestDistance，确保第一次更新起效
 	float ClosestDistanceSq{ TNumericLimits<float>::Max() };
@@ -135,7 +152,6 @@ bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
 	OutSelection.FrontLedge = PairCandidate.FrontLedge;
 	OutSelection.BackLedge = PairCandidate.BackLedge;
 	OutSelection.FrontInputKey = PairCandidate.FrontInputKey;
-	OutSelection.BackInputKey = PairCandidate.BackInputKey;
 
 	return true;
 }
@@ -188,19 +204,7 @@ void UGAFTraversableComponent::TryUpdatePairCandidate(
 	// Back 就是 Pair 内对应的另一边
 	InOutPairCandidate.BackLedge = CandidateBack;
 	InOutPairCandidate.FrontInputKey = FrontInputKey;
-	InOutPairCandidate.BackInputKey = 0.0f;
 	InOutPairCandidate.DistanceSq = DistanceSq;
-
-	if (IsValid(CandidateBack) && CandidateBack->bEnabled && CandidateBack->GetNumberOfSplinePoints() > 0)
-	{
-		// 用 FrontLedge 上的归一化距离映射到 BackLedge，保证成对边缘的前后位置对应
-		// 例如 FrontLedge 上 30% 的位置，会对应到 BackLedge 上 30% 的位置
-		const float FrontLength = FMath::Max(CandidateFront->GetSplineLength(), KINDA_SMALL_NUMBER);
-		const float FrontDistance = CandidateFront->GetDistanceAlongSplineAtSplineInputKey(FrontInputKey);
-		const float NormalizedDistance = FMath::Clamp(FrontDistance / FrontLength, 0.0f, 1.0f);
-		InOutPairCandidate.BackInputKey = CandidateBack->GetInputKeyAtDistanceAlongSpline(
-			NormalizedDistance * CandidateBack->GetSplineLength());
-	}
 }
 
 // 返回 InputKey 在 Ledge 上偏向 TargetLocation 侧的法线

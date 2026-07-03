@@ -48,7 +48,6 @@ struct FGAFResolvedTraversableLedgeSelection
 	TWeakObjectPtr<UGAFTraversableLedgeSplineComponent> FrontLedge;
 	TWeakObjectPtr<UGAFTraversableLedgeSplineComponent> BackLedge;
 	float FrontInputKey{ 0.0f };
-	float BackInputKey{ 0.0f };
 };
 
 // Pair 内部临时候选结果，只在查找最近 ledge 时使用
@@ -59,8 +58,8 @@ struct FGAFTraversablePairCandidate
 	UGAFTraversableLedgeSplineComponent* FrontLedge{ nullptr };
 	UGAFTraversableLedgeSplineComponent* BackLedge{ nullptr };
 
+	// 只需要 FrontLedge 的点位置，BackLedge 会取离 Front 最近的点
 	float FrontInputKey{ 0.0f };
-	float BackInputKey{ 0.0f };
 	float DistanceSq{ 0.0f };
 };
 
@@ -81,6 +80,10 @@ public:
 		const FVector& HitLocation,
 		const FVector& ActorLocation,
 		FGAFTraversalCheckResult& InOutCheckResult) const;
+
+	// 可攀爬边缘的最短长度
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
+	float MinLedgeWidth{ 60.0f };
 
 protected:
 	void RefreshResolvedLedgePairs();
