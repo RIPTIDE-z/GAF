@@ -1,25 +1,25 @@
-#include "Component/GAFTraversalComponent.h"
+#include "Traversal/GAFCharacterTraversalComponent.h"
 
 #include "GAFLogChannels.h"
-#include "Utility/GAFTraversalCollisionResolver.h"
+#include "Traversal/GAFTraversalCollisionResolver.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(GAFTraversalComponent)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterTraversalComponent)
 
-UGAFTraversalComponent::UGAFTraversalComponent()
+UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 {
 	// 翻越组件不需要Tick，每次翻越才会调用，状态也都是临时状态
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-bool UGAFTraversalComponent::TryTraversalAction(
+bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	const FGAFTraversalCheckInputs& Inputs,
 	const EGAFTraversalDebugType DebugType,
 	FGAFTraversalCheckResult& OutResult)
 {
 	// 存放检测结果
-	OutResult = FGAFTraversalCheckResult{};
+	OutResult.Reset();
 
 	const ACharacter* Character = GetOwnerCharacter();
 	if (!IsValid(Character))
@@ -90,7 +90,7 @@ bool UGAFTraversalComponent::TryTraversalAction(
 	return false;
 }
 
-ACharacter* UGAFTraversalComponent::GetOwnerCharacter() const
+ACharacter* UGAFCharacterTraversalComponent::GetOwnerCharacter() const
 {
 	return Cast<ACharacter>(GetOwner());
 }

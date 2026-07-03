@@ -1,24 +1,84 @@
-# Traversal
+# GAF Traversal
 
-仿照 GASP 的 `AC_TraversalLogic`，先尝试翻越，失败后再普通跳跃
+- `GAFCharacterTraversalComponent`
+    - 挂在角色上，负责发起 Traversal 检测、维护 `bDoingTraversalAction`、后续选择 Montage 和执行翻越
+- `GAFTraversableLedgeProviderComponent`
+    - 挂在可翻越的场景 Actor 上。
+    - 负责从该 Actor 的 ledge spline 中提供 Front / Back Ledge 数据
+- `GAFTraversableLedgeSplineComponent`
+    - 继承自 `USplineComponent`，表示一条可攀爬边缘，可直接在编辑器视口中编辑 spline 点
+- `GAFTraversalTypes`
+    - 存放 Traversal 使用的 enum 和 struct
+    - 包括 `FGAFTraversalCheckInputs`、`FGAFTraversalCheckResult`、`EGAFTraversalActionType` 等
+- `GAFTraversalCollisionResolver`
+    - 从项目设置读取 Traversal 使用的 C++ `ECollisionChannel`
+- `GAFTraversalSettings` 用于暴露 Project Settings 配置，可配置用于Traversal的碰撞频道
 
-- `UGAFTraversalComponent`挂在 `AGAFCharacterCore` 上
-  - 不启用 Tick，只有输入触发时才执行 Traversal 尝试
-  - 入口函数是 `TryTraversalAction()`
-- `UGAFTraversalSettings`继承自 UDeveloperSettings 在 Project Settings 中暴露 Traversal 相关插件配置
-  - 当前用于选择 Traversal Trace Channel
-- `FGAFTraversalCollisionResolver`
-  - 从 Project Settings 读取 C++ trace 使用的 `ECollisionChannel`
+## 角色侧
 
-## Trace Channel 配置
+`UGAFCharacterTraversalComponent` 由 `AGAFCharacterCore` 默认创建
 
-不硬编码 ECC_GameTraceChannel1，通过 `UGAFTraversalSettings` 暴露配置
+- 输入逻辑在 `AGAFCharacterPlayable` 中处理：
+    - Jump `Started`：先尝试 Traversal，失败后执行普通 `Jump()`
+    - Jump `Triggered`：空中持续尝试 Traversal，失败不触发普通 Jump
+    - Jump `Completed / Canceled`：调用 `StopJumping()`
 
-- TraversableTraceChannel
 
-默认情况下，`TraversableTraceChannel` fallback 到 `Visibility`。这是为了保证插件初次接入时不会崩溃，但正式项目应该创建并选择专用 Trace Channel。
+## 场景侧
 
-建议在项目中添加专用 Trace Channel：
+任意 Actor 只要添加 `UGAFTraversableLedgeProviderComponent`，就可以作为可翻越数据提供者，不需要继承特定 Actor 类
+
+推荐组件组合：
+
+```text
+Actor
+    UGAFTraversableLedgeProviderComponent
+    UGAFTraversableLedgeSplineComponent
+    UGAFTraversableLedgeSplineComponent
+```
+
+`UGAFTraversableLedgeProviderComponent` 内部通过 `LedgePairs` 配置边缘关系：
+
+- 每个 pair 最多包含两条 `UGAFTraversableLedgeSplineComponent`
+- 两条边没有固定 Front / Back 语义
+- 查询时会根据角色位置自动选择离角色更近的一条作为 `FrontLedge`
+- 允许只配置一条边，这种情况下只返回 FrontLedge
+- `BeginPlay()` 会把编辑器中的 `FComponentReference` 解析成运行时弱引用缓存
+
+## Ledge 查询逻辑
+
+`GetLedgeTransforms()` 是场景侧的主要查询入口
+
+当前流程：
+
+1. 遍历所有已解析的 ledge pair
+2. 对每个 pair 的两条边分别测试，选出更适合作为 FrontLedge 的一侧
+3. 在所有 pair 中选择离角色最近的 ledge
+4. 使用命中位置在 FrontLedge 上找最近点
+5. 用 `MinLedgeWidth` 对该点沿 spline 的距离进行 clamp，避免位置太靠近 ledge 端点
+6. 如果存在 BackLedge，则从 FrontLedgeLocation 出发，在 BackLedge 上找最近 transform 并写入结果
+
+`MinLedgeWidth` 的作用是防止角色在 ledge 拐角或端点处翻越时悬空
+
+## 数据类型
+
+`FGAFTraversalCheckInputs` 表示一次 Traversal 检测所需的输入参数，例如 trace 方向、距离、胶囊半径和半高
+
+`FGAFTraversalCheckResult` 表示检测结果，包括：
+
+- Traversal 动作类型：`Hurdle`、`Vault`、`Mantle`
+- Front / Back Ledge 数据
+- Back Floor 数据
+- 障碍物高度、深度和后边缘高度
+- 命中的组件
+- 选中的 Montage、StartTime、PlayRate
+- 失败原因
+
+## Trace Channel
+
+Traversal 不硬编码 `ECC_GameTraceChannel1`，而是通过 `UGAFTraversalSettings` 在 Project Settings 中选择
+
+推荐配置：
 
 ```text
 Project Settings -> Engine -> Collision -> New Trace Channel
@@ -26,77 +86,18 @@ Name: Traversable
 Default Response: Ignore
 ```
 
-然后配置需要被 Traversal 检测命中的组件：
+需要被 Traversal 检测命中的组件，把 `Traversable` 响应设置为 `Block`
 
-```text
-Traversable: Block
-```
-
-再到插件设置中选择该 Channel：
+然后在插件设置中选择：
 
 ```text
 Project Settings -> Plugins -> GAF Traversal
 Traversable Trace Channel: Traversable
 ```
 
-如果 `ECC_GameTraceChannel1` 已经被项目占用，可以用其他空闲槽位，例如 `ECC_GameTraceChannel2` 或 `ECC_GameTraceChannel3`。插件不依赖具体槽位，只依赖 Project Settings 里选择的 Trace Channel。
-
-示例 ini：
-
-```ini
-[/Script/Engine.CollisionProfile]
-+DefaultChannelResponses=(Channel=ECC_GameTraceChannel1,DefaultResponse=ECR_Ignore,bTraceType=True,bStaticObject=False,Name="Traversable")
-```
-
-如果项目已经占用了 `ECC_GameTraceChannel1`，可以改成：
-
-```ini
-[/Script/Engine.CollisionProfile]
-+DefaultChannelResponses=(Channel=ECC_GameTraceChannel3,DefaultResponse=ECR_Ignore,bTraceType=True,bStaticObject=False,Name="Traversable")
-```
-
-## C++ 使用方式
-
-Traversal trace 统一通过 resolver 获取 `ECollisionChannel`：
+C++ 检测时统一通过 resolver 获取 channel：
 
 ```cpp
 const ECollisionChannel Channel =
 	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
 ```
-
-后续 Traversal 检测建议使用底层 C++ trace，例如：
-
-```cpp
-const ECollisionChannel Channel =
-	FGAFTraversalCollisionResolver::GetTraversalCollisionChannel();
-
-GetWorld()->SweepSingleByChannel(
-	Hit,
-	Start,
-	End,
-	FQuat::Identity,
-	Channel,
-	Shape,
-	QueryParams);
-```
-
-## Traversable Actor
-
-这里对原本GASP的LevelBlock_Traversable进行拓展，“ 可攀爬 ” 功能不依赖特定 Actor 类。任意 Actor 只要添加以下组件即可参与后续 Traversal 检测：
-
-- `UGAFTraversableLedgeSplineComponent`：实际可编辑的可攀爬边，可在同一个 Actor 上添加多个
-- `UGAFTraversableComponent`：提供 `GetLedgeTransforms()` 查询入口
-  - 内含 TraversableLedgePair 用于配对前后边缘
-  - 使用 FComponentReference 以选择同一个Actor下的组件，并在运行时通过Resolver解析为指针
-  - 当前会在BeginPlay进行一次整体解析
-
-编辑器配置流程：
-
-```text
-Actor Blueprint
-  Add Component -> GAF Traversable Component
-  Add Component -> GAF Traversable Ledge Spline Component
-  Add Component -> GAF Traversable Ledge Spline Component
-```
-
-在视口中直接编辑每条 `UGAFTraversableLedgeSplineComponent` 的 spline 点。然后在 `UGAFTraversableComponent` 的 `LedgePairs` 中显式配置 Front / Back 对应关系

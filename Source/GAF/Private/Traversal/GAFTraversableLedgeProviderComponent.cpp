@@ -1,16 +1,16 @@
-#include "Component/GAFTraversableComponent.h"
+#include "Traversal/GAFTraversableLedgeProviderComponent.h"
 
 #include "GAFLogChannels.h"
-#include "Component/GAFTraversableLedgeSplineComponent.h"
+#include "Traversal/GAFTraversableLedgeSplineComponent.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(GAFTraversableComponent)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(GAFTraversableLedgeProviderComponent)
 
-UGAFTraversableComponent::UGAFTraversableComponent()
+UGAFTraversableLedgeProviderComponent::UGAFTraversableLedgeProviderComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UGAFTraversableComponent::BeginPlay()
+void UGAFTraversableLedgeProviderComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -21,11 +21,12 @@ void UGAFTraversableComponent::BeginPlay()
 
 // 找到可供翻越的边缘数据并写入CheckResult
 // TODO:细化失败原因
-bool UGAFTraversableComponent::GetLedgeTransforms(
+bool UGAFTraversableLedgeProviderComponent::GetLedgeTransforms(
 	const FVector& HitLocation,
 	const FVector& ActorLocation,
 	FGAFTraversalCheckResult& InOutCheckResult) const
 {
+	InOutCheckResult.Reset();
 
 	// Step 1 尝试找到离角色最近的 Ledge
 	FGAFResolvedTraversableLedgeSelection Selection;
@@ -97,7 +98,7 @@ bool UGAFTraversableComponent::GetLedgeTransforms(
 }
 
 // 遍历所有可用边缘，找到离角色最近的一条作为 FrontLedge，在同一组的就是 BackLedge
-bool UGAFTraversableComponent::FindLedgeClosestToActor(
+bool UGAFTraversableLedgeProviderComponent::FindLedgeClosestToActor(
 	const FVector& ActorLocation,
 	FGAFResolvedTraversableLedgeSelection& OutSelection) const
 {
@@ -125,7 +126,7 @@ bool UGAFTraversableComponent::FindLedgeClosestToActor(
 }
 
 // Pair内部对每条边进行对比，判断是否能作为最近的边缘
-bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
+bool UGAFTraversableLedgeProviderComponent::TryUpdateClosestLedgeFromPair(
 	const FGAFResolvedTraversableLedgePair& Pair,
 	const FVector& ActorLocation,
 	float& InOutClosestDistanceSq,
@@ -159,7 +160,7 @@ bool UGAFTraversableComponent::TryUpdateClosestLedgeFromPair(
 // 尝试将 Pair 内的一条 Spline 作为 FrontLedge 候选
 // CandidateFront 是当前尝试面对角色的一侧，CandidateBack 是它配对的另一侧
 // 如果 CandidateFront 比当前 PairCandidate 更近，则覆盖 PairCandidate
-void UGAFTraversableComponent::TryUpdatePairCandidate(
+void UGAFTraversableLedgeProviderComponent::TryUpdatePairCandidate(
 	UGAFTraversableLedgeSplineComponent* CandidateFront,
 	UGAFTraversableLedgeSplineComponent* CandidateBack,
 	const FVector& ActorLocation,
@@ -167,7 +168,6 @@ void UGAFTraversableComponent::TryUpdatePairCandidate(
 {
 	if (!IsValid(CandidateFront) || !CandidateFront->bEnabled || CandidateFront->GetNumberOfSplinePoints() <= 0)
 	{
-		UE_LOG(LogGAFTraversal, Warning, TEXT("Cant UpdatePairCandidate in [%s], CandidateFront is invalid"), *GetNameSafe(this));
 		return;
 	}
 
@@ -208,7 +208,7 @@ void UGAFTraversableComponent::TryUpdatePairCandidate(
 }
 
 // 返回 InputKey 在 Ledge 上偏向 TargetLocation 侧的法线
-FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
+FVector UGAFTraversableLedgeProviderComponent::GetLedgeNormalFacingLocation(
 	const UGAFTraversableLedgeSplineComponent& Ledge,
 	const float InputKey,
 	const FVector& TargetLocation)
@@ -219,6 +219,7 @@ FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
 	// TODO: 尝试放宽Spline编辑要求
 	FVector Normal = Ledge.GetUpVectorAtSplineInputKey(InputKey, ESplineCoordinateSpace::World).GetSafeNormal();
 
+	(void)TargetLocation;
 	// // 这里可以做根据点到角色方向的自动翻转机制，但是会破坏 “ 边缘只有一侧可攀爬 ” 的语义
 	// const FVector LedgeLocation = Ledge.GetLocationAtSplineInputKey(InputKey, ESplineCoordinateSpace::World);
 	//
@@ -239,7 +240,7 @@ FVector UGAFTraversableComponent::GetLedgeNormalFacingLocation(
 }
 
 // 将编辑器里的 LedgePairs 解析为运行时组件指针
-void UGAFTraversableComponent::RefreshResolvedLedgePairs()
+void UGAFTraversableLedgeProviderComponent::RefreshResolvedLedgePairs()
 {
 	ResolvedLedgePairs.Reset();
 
@@ -269,7 +270,7 @@ void UGAFTraversableComponent::RefreshResolvedLedgePairs()
 
 // 获取所有的LedgeSpline组件
 // TODO: 可用于Debug绘制所有组件
-void UGAFTraversableComponent::GetLedgeSplines(TArray<UGAFTraversableLedgeSplineComponent*>& OutSplines) const
+void UGAFTraversableLedgeProviderComponent::GetLedgeSplines(TArray<UGAFTraversableLedgeSplineComponent*>& OutSplines) const
 {
 	OutSplines.Reset();
 
@@ -284,7 +285,7 @@ void UGAFTraversableComponent::GetLedgeSplines(TArray<UGAFTraversableLedgeSpline
 }
 
 // 解析单个SplineComponent
-UGAFTraversableLedgeSplineComponent* UGAFTraversableComponent::ResolveLedgeSpline(
+UGAFTraversableLedgeSplineComponent* UGAFTraversableLedgeProviderComponent::ResolveLedgeSpline(
 	const FComponentReference& Reference) const
 {
 	AActor* Owner = GetOwner();

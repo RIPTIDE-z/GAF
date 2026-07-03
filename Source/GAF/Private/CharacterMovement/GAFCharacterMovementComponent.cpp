@@ -1,4 +1,4 @@
-#include "Component/GAFCharacterMovementComponent.h"
+#include "CharacterMovement/GAFCharacterMovementComponent.h"
 
 #include "Character/GAFCharacterCore.h"
 #include "Components/CapsuleComponent.h"

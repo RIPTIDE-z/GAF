@@ -1,8 +1,8 @@
 #include "Character/GAFCharacterCore.h"
 
 #include "GAFLogChannels.h"
-#include "Component/GAFCharacterMovementComponent.h"
-#include "Component/GAFTraversalComponent.h"
+#include "CharacterMovement/GAFCharacterMovementComponent.h"
+#include "Traversal/GAFCharacterTraversalComponent.h"
 #include "Curves/CurveFloat.h"
 #include "MotionWarpingComponent.h"
 #include "GAFGamePlayTag.h"
@@ -28,7 +28,7 @@ AGAFCharacterCore::AGAFCharacterCore(const FObjectInitializer& ObjectInitializer
 	}
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
-	TraversalComponent = CreateDefaultSubobject<UGAFTraversalComponent>(TEXT("Traversal"));
+	CharacterTraversalComponent = CreateDefaultSubobject<UGAFCharacterTraversalComponent>(TEXT("CharacterTraversal"));
 }
 
 void AGAFCharacterCore::PostInitializeComponents()

@@ -1,4 +1,4 @@
-#include "Utility/GAFTraversalCollisionResolver.h"
+#include "Traversal/GAFTraversalCollisionResolver.h"
 
 #include "GAFLogChannels.h"
 #include "Settings/GAFTraversalSettings.h"

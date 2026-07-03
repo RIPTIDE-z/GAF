@@ -1,4 +1,4 @@
-#include "Component/GAFTraversableLedgeSplineComponent.h"
+#include "Traversal/GAFTraversableLedgeSplineComponent.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFTraversableLedgeSplineComponent)
 

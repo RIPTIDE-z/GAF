@@ -7,10 +7,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Component/GAFTraversalComponent.h"
 #include "Engine/EngineTypes.h"
+#include "Traversal/GAFTraversalTypes.h"
 
-#include "GAFTraversableComponent.generated.h"
+#include "GAFTraversableLedgeProviderComponent.generated.h"
 
 class UGAFTraversableLedgeSplineComponent;
 
@@ -65,12 +65,12 @@ struct FGAFTraversablePairCandidate
 
 // 为任意Actor提供 “ 可翻越 ” 特性的组件
 UCLASS(ClassGroup = (GAF), meta = (BlueprintSpawnableComponent))
-class GAF_API UGAFTraversableComponent : public UActorComponent
+class GAF_API UGAFTraversableLedgeProviderComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	UGAFTraversableComponent();
+	UGAFTraversableLedgeProviderComponent();
 
 	virtual void BeginPlay() override;
 
@@ -82,7 +82,7 @@ public:
 		FGAFTraversalCheckResult& InOutCheckResult) const;
 
 	// 可攀爬边缘的最短长度
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAF|Traversal", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float MinLedgeWidth{ 60.0f };
 
 protected:

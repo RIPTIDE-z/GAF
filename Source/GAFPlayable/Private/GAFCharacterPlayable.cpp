@@ -3,7 +3,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
-#include "Component/GAFTraversalComponent.h"
+#include "Traversal/GAFCharacterTraversalComponent.h"
 #include "GAFGamePlayTag.h"
 #include "GAFInputBindingHelpers.h"
 #include "GAFInputSettings.h"
@@ -316,7 +316,7 @@ void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionV
 	FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
 
 	// 第一次按下时先尝试 Traversal，Traversal 失败才执行普通 Jump
-	if (!TraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult))
+	if (!CharacterTraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult))
 	{
 		Jump();
 	}
@@ -337,7 +337,7 @@ void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& Actio
 	if (Movement->IsFalling())
 	{
 		FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
-		TraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult);
+		CharacterTraversalComponent->TryTraversalAction(FGAFTraversalCheckInputs(), EGAFTraversalDebugType::ForOneFrame, TraversalCheckResult);
 	}
 }
 

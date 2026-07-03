@@ -1,24 +1,23 @@
+// Traversal 系统所使用的数据结构以及枚举
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
-#include "Animation/GAFCharacterDataProvider.h"
 
-#include "GAFTraversalComponent.generated.h"
+#include "GAFTraversalTypes.generated.h"
 
-class ACharacter;
 class UAnimMontage;
 class UPrimitiveComponent;
 
+// 翻越动作类型
 UENUM(BlueprintType)
 enum class EGAFTraversalActionType : uint8
 {
 	None,
-	// Traverse over a thin object and end on the ground at a similar level (Low fence)
+	// 越过一个较薄的物体，并在相近高度的地面上结束动作（例如低矮围栏）
 	Hurdle,
-	// Traverse over a thin object and end in a falling state (Tall fence, or elevated obstacle with no floor on the other side)
+	// 越过一个较薄的物体，并以空中下落状态结束动作（例如较高围栏，或另一侧没有地面的高处障碍物）
 	Vault,
-	// Traverse up and onto an object without passing over it
+	// 向上攀爬到物体顶部，不越过该物体
 	Mantle
 };
 
@@ -30,6 +29,7 @@ enum class EGAFTraversalDebugType : uint8
 	ForDuration
 };
 
+// 翻越检测失败原因
 UENUM(BlueprintType)
 enum class EGAFTraversalFailureReason : uint8
 {
@@ -42,6 +42,7 @@ enum class EGAFTraversalFailureReason : uint8
 	MontageSelectionFailed,
 };
 
+// 翻越检测的输入，由 Character 输入给 CharacterTraversalComponent
 USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversalCheckInputs
 {
@@ -76,6 +77,11 @@ USTRUCT(BlueprintType)
 struct GAF_API FGAFTraversalCheckResult
 {
 	GENERATED_BODY()
+
+	void Reset()
+	{
+		*this = FGAFTraversalCheckResult{};
+	}
 
 	// 翻越动作类型
 	UPROPERTY(BlueprintReadOnly)
@@ -142,43 +148,4 @@ struct GAF_API FGAFTraversalCheckResult
 	// Traversal 失败原因
 	UPROPERTY(BlueprintReadOnly)
 	EGAFTraversalFailureReason FailureReason{ EGAFTraversalFailureReason::None };
-};
-
-UCLASS(ClassGroup = (GAF), meta = (BlueprintSpawnableComponent))
-class GAF_API UGAFTraversalComponent : public UActorComponent
-{
-	GENERATED_BODY()
-
-public:
-	UGAFTraversalComponent();
-
-	bool IsDoingTraversalAction() const { return bDoingTraversalAction; }
-
-	// 检测是否能进行翻越并进行动画选择
-	// 若检测判定失败则会将原因写入CheckResult
-	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
-	bool TryTraversalAction(
-		const FGAFTraversalCheckInputs& Inputs,
-		EGAFTraversalDebugType DebugType,
-		FGAFTraversalCheckResult& OutResult);
-
-	// Debug绘制等级
-	// TODO: 提升为控制台变量
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
-	int DebugDrawLevel{ 1 };
-
-	// Debug绘制时间
-	// TODO: 提升为控制台变量
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GAF|Traversal")
-	float DebugDrawDuration{ 1.5f };
-
-protected:
-	ACharacter* GetOwnerCharacter() const;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Traversal")
-	bool bDoingTraversalAction{ false };
-
-	// 缓存的运动数据
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
-	FGAFTraversalFrameData CachedTraversalData;
 };
