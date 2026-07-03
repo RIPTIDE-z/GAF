@@ -39,6 +39,15 @@ enum class EGAFTraversalFailureReason : uint8
 	InvalidTraversalChooser,
 	TraversalCheckFailed,
 	MontageSelectionFailed,
+	InvalidTraversalMesh,
+	InvalidMotionWarpingComponent,
+	InvalidTraversalMontage,
+	InvalidTraversalHitComponent,
+	MissingBackLedgeWarpWindow,
+	MissingBackFloorWarpWindow,
+	MissingDistanceFromLedgeCurve,
+	WarpTargetUpdateFailed,
+	MontagePlayFailed,
 };
 
 // 翻越检测的输入，由 Character 输入给 CharacterTraversalComponent

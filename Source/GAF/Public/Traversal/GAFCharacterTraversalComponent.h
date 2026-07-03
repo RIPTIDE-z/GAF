@@ -34,11 +34,13 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	bool PerformTraversalAction(
-		const FGAFTraversalCheckResult& TraversalResult,
+		FGAFTraversalCheckResult& InOutTraversalResult,
 		const FGAFTraversalSettings& TraversalSettings);
 	
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
-	void UpdateWarpTargets();
+	bool UpdateWarpTargets(
+		FGAFTraversalCheckResult& InOutTraversalResult,
+		const FGAFTraversalSettings& TraversalSettings);
 
 	// 打印 Traversal 检测失败原因
 	void DebugPrintTraversalFailureReason(
@@ -53,10 +55,19 @@ public:
 protected:
 	ACharacter* GetOwnerCharacter() const;
 
+	void HandleTraversalMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+
+	void HandleTraversalMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	void FinishTraversalAction();
+
 	UPROPERTY(BlueprintReadOnly)
 	bool bDoingTraversalAction{ false };
 
 	// 缓存的用于翻越系统的数据
 	UPROPERTY(BlueprintReadOnly, Transient)
 	FGAFTraversalFrameData CachedTraversalData;
+
+	UPROPERTY(BlueprintReadOnly, Transient)
+	FGAFTraversalCheckResult ActiveTraversalResult;
 };
