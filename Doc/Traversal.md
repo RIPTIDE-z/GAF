@@ -107,6 +107,8 @@ Actor
 - `AirTraceHalfHeight`：空中检测胶囊半高
 - `DebugDrawLevel`：trace debug 等级，当前 `0/1` 不绘制，`2+` 按传入的 `EDrawDebugTrace::Type` 绘制
 - `DebugDrawDuration`：持续绘制时的保留时间
+- `DebugPrintColor`：Traversal 屏幕调试文本颜色
+- `DebugPrintDuration`：Traversal 屏幕调试文本显示时间
 
 默认数值复现当前 GASP 逻辑：
 
@@ -172,3 +174,6 @@ CharacterSettings.TraversalSettings override
 -> Project Settings: UGAFTraversalConfig
 -> ECC_Visibility fallback
 ```
+# Debug
+
+使用FailureReason枚举表示失败原因，会由TryTraversalAction写入CheckResult，再进行统一打印

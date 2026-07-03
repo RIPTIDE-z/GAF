@@ -30,6 +30,11 @@ public:
 		EDrawDebugTrace::Type DebugType,
 		FGAFTraversalCheckResult& OutResult);
 
+	// 输出 Traversal 检测失败原因，集中放在 Traversal 系统里，避免 Playable 直接处理调试格式。
+	void DebugPrintTraversalFailureReason(
+		const FGAFTraversalCheckResult& TraversalCheckResult,
+		const FGAFTraversalSettings& TraversalSettings) const;
+
 protected:
 	ACharacter* GetOwnerCharacter() const;
 

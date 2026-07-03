@@ -322,6 +322,9 @@ void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionV
 		EDrawDebugTrace::ForDuration,
 		TraversalCheckResult))
 	{
+		CharacterTraversalComponent->DebugPrintTraversalFailureReason(
+			TraversalCheckResult,
+			GetDefaultCharacterSettings().TraversalSettings);
 		Jump();
 	}
 }
@@ -341,11 +344,18 @@ void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& Actio
 	if (Movement->IsFalling())
 	{
 		FGAFTraversalCheckResult TraversalCheckResult = FGAFTraversalCheckResult();
-		CharacterTraversalComponent->TryTraversalAction(
+		const bool bTraversalSucceeded = CharacterTraversalComponent->TryTraversalAction(
 			GetTraversalCheckInputs(),
 			GetDefaultCharacterSettings().TraversalSettings,
 			EDrawDebugTrace::ForOneFrame,
 			TraversalCheckResult);
+
+		if (!bTraversalSucceeded)
+		{
+			CharacterTraversalComponent->DebugPrintTraversalFailureReason(
+				TraversalCheckResult,
+				GetDefaultCharacterSettings().TraversalSettings);
+		}
 	}
 }
 

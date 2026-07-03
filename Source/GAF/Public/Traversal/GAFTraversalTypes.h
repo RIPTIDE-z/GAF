@@ -30,6 +30,7 @@ enum class EGAFTraversalFailureReason : uint8
 	InvalidMovementComponent,
 	AlreadyDoingTraversal,
 	CantFindTraversableObject,
+	CantFindFrontLedge,
 	TraversalCheckFailed,
 	MontageSelectionFailed,
 };

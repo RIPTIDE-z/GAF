@@ -57,4 +57,12 @@ struct GAF_API FGAFTraversalSettings
 	// Trace Debug 保留时间，仅 ForDuration 等持续绘制模式使用
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Debug", meta = (ClampMin = "0.0", ClampMax = "60",UIMin = "0.0"))
 	float DebugDrawDuration{ 1.5f };
+
+	// Traversal 屏幕调试文本颜色，用于 PrintString 输出失败原因等状态
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Debug")
+	FLinearColor DebugPrintColor{ 0.0f, 0.8f, 1.0f, 1.0f };
+
+	// Traversal 屏幕调试文本显示时间，用于 PrintString
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Debug", meta = (ClampMin = "0.0", ClampMax = "60.0", UIMin = "0.0"))
+	float DebugPrintDuration{ 2.0f };
 };

@@ -151,7 +151,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	OutResult = InOutTraversalCheckResult;
 	OutResult.HitComponent = TraversableObjectHitResult.GetComponent();
 	
-	// DEBUG(Step2): Draw Debug shapes at ledge locations.
+	// DEBUG(Step2): 绘制前后边缘位置
+	// TODO:提取为单独模块
 	if (TraversalSettings.DebugDrawLevel >= 1)
 	{
 		UWorld* World = GetWorld();
@@ -187,40 +188,12 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		}
 	}
 
-	// 打印失败原因
-	if (!bGetLedge)
+	// Step 3.1 If the traversable level block has a valid front ledge, continue the function. If not, exit early.
+	if (!OutResult.bHasFrontLedge)
 	{
-		// 拿到 UE 的 enum 反射对象
-		const UEnum* FailureReasonEnum = StaticEnum<EGAFTraversalFailureReason>();
-
-		const FString FailureReasonString = FailureReasonEnum
-			? FailureReasonEnum->GetNameStringByValue(static_cast<int64>(OutResult.FailureReason))
-			: TEXT("Unknown");
-
-		const FString DebugString = FString::Printf(
-			TEXT("%s failed to get traversal ledge from [%s]. FailureReason: %s."),
-			*GetNameSafe(this),
-			*GetNameSafe(HitActor),
-			*FailureReasonString
-		);
-
-		if (TraversalSettings.DebugDrawLevel >= 1)
-		{
-			UKismetSystemLibrary::PrintString(
-				this,
-				DebugString,
-				true,
-				false,
-				FLinearColor(0.f, 0.8f, 1.f, 1.f),
-				2.0f,
-				FName(TEXT("Traversal1"))
-			);
-		}
-
+		OutResult.FailureReason = EGAFTraversalFailureReason::CantFindFrontLedge;
 		return false;
 	}
-
-	// Step 3.1 If the traversable level block has a valid front ledge, continue the function. If not, exit early.
 
 	// Step 3.2: Perform a trace from the actors location up to the front ledge location to determine
 	// if there is room for the actor to move up to it. If so, continue the function. If not, exit early.
@@ -254,6 +227,35 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	// Step 5.2: Finally, if the check was a success and a montage was found, trigger the Traversal Event
 	return false;
+}
+
+void UGAFCharacterTraversalComponent::DebugPrintTraversalFailureReason(
+	const FGAFTraversalCheckResult& TraversalCheckResult,
+	const FGAFTraversalSettings& TraversalSettings) const
+{
+	if (TraversalSettings.DebugDrawLevel < 1)
+	{
+		return;
+	}
+
+	const UEnum* FailureReasonEnum = StaticEnum<EGAFTraversalFailureReason>();
+	const FString FailureReasonString = IsValid(FailureReasonEnum)
+		? FailureReasonEnum->GetNameStringByValue(static_cast<int64>(TraversalCheckResult.FailureReason))
+		: TEXT("Unknown");
+
+	const FString DebugString = FString::Printf(
+		TEXT("%s failed to Traverse. FailureReason: %s."),
+		*GetNameSafe(GetOwner()),
+		*FailureReasonString);
+
+	UKismetSystemLibrary::PrintString(
+		this,
+		DebugString,
+		true,
+		false,
+		TraversalSettings.DebugPrintColor,
+		TraversalSettings.DebugPrintDuration,
+		FName(TEXT("TraversalFailureReason")));
 }
 
 ACharacter* UGAFCharacterTraversalComponent::GetOwnerCharacter() const
