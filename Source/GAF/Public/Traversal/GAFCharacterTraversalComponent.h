@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Animation/GAFCharacterDataProvider.h"
+#include "Settings/GAFMotionMatchingSettings.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Settings/GAFTraversalSettings.h"
 #include "Traversal/GAFTraversalTypes.h"
@@ -27,11 +28,25 @@ public:
 	bool TryTraversalAction(
 		const FGAFTraversalCheckInputs& TraversalCheckInputs,
 		const FGAFTraversalSettings& TraversalSettings,
+		const FGAFMotionMatchingSettings& MotionMatchingSettings,
 		EDrawDebugTrace::Type TraversalDebugType,
 		FGAFTraversalCheckResult& InOutTraversalCheckResult);
+	
+	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
+	bool PerformTraversalAction(
+		const FGAFTraversalCheckResult& TraversalResult,
+		const FGAFTraversalSettings& TraversalSettings);
+	
+	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
+	void UpdateWarpTargets();
 
-	// 输出 Traversal 检测失败原因，集中放在 Traversal 系统里，避免 Playable 直接处理调试格式。
+	// 打印 Traversal 检测失败原因
 	void DebugPrintTraversalFailureReason(
+		const FGAFTraversalCheckResult& TraversalCheckResult,
+		const FGAFTraversalSettings& TraversalSettings) const;
+
+	// 打印 Traversal Check Result
+	void DebugPrintTraversalCheckResult(
 		const FGAFTraversalCheckResult& TraversalCheckResult,
 		const FGAFTraversalSettings& TraversalSettings) const;
 
@@ -41,7 +56,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	bool bDoingTraversalAction{ false };
 
-	// 缓存的运动数据
+	// 缓存的用于翻越系统的数据
 	UPROPERTY(BlueprintReadOnly, Transient)
 	FGAFTraversalFrameData CachedTraversalData;
 };

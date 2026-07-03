@@ -2,6 +2,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "PoseSearch/PoseSearchHistory.h"
 
 #include "GAFTraversalTypes.generated.h"
 
@@ -32,6 +34,9 @@ enum class EGAFTraversalFailureReason : uint8
 	CantFindTraversableObject,
 	CantFindFrontLedge,
 	NoRoomMoveToFrontLedge,
+	InvalidAnimInstance,
+	InvalidPoseHistory,
+	InvalidTraversalChooser,
 	TraversalCheckFailed,
 	MontageSelectionFailed,
 };
@@ -143,4 +148,63 @@ struct GAF_API FGAFTraversalCheckResult
 	// Traversal 失败原因
 	UPROPERTY(BlueprintReadOnly)
 	EGAFTraversalFailureReason FailureReason{ EGAFTraversalFailureReason::None };
+};
+
+// Chooser 选择 Traversal Montage 所需的输入
+USTRUCT(BlueprintType)
+struct GAF_API FGAFTraversalChooserInputs
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	EGAFTraversalActionType ActionType{ EGAFTraversalActionType::None };
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bHasFrontLedge{ false };
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bHasBackLedge{ false };
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bHasBackFloor{ false };
+
+	UPROPERTY(BlueprintReadWrite)
+	float ObstacleHeight{ 0.0f };
+
+	UPROPERTY(BlueprintReadWrite)
+	float ObstacleDepth{ 0.0f };
+
+	UPROPERTY(BlueprintReadWrite)
+	float BackLedgeHeight{ 0.0f };
+
+	UPROPERTY(BlueprintReadWrite)
+	float DistanceToLedge{ 0.0f };
+
+	UPROPERTY(BlueprintReadWrite)
+	FGameplayTag MovementMode;
+
+	UPROPERTY(BlueprintReadWrite)
+	FGameplayTag Gait;
+
+	UPROPERTY(BlueprintReadWrite)
+	float Speed{ 0.0f };
+
+	UPROPERTY(BlueprintReadWrite)
+	FPoseHistoryReference PoseHistory;
+};
+
+// Chooser 输出的 Traversal Montage 选择结果
+USTRUCT(BlueprintType)
+struct GAF_API FGAFTraversalChooserOutputs
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	EGAFTraversalActionType ActionType{ EGAFTraversalActionType::None };
+
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<UAnimMontage> ChosenMontage{ nullptr };
+
+	UPROPERTY(BlueprintReadWrite)
+	float MontageStartTime{ 0.0f };
 };

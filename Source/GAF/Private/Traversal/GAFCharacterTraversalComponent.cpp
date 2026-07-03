@@ -1,14 +1,21 @@
 #include "Traversal/GAFCharacterTraversalComponent.h"
 
 #include "GAFLogChannels.h"
+#include "AnimInstance/GAFAnimInstanceDataProvider.h"
 #include "Traversal/GAFTraversalCollisionResolver.h"
 #include "Traversal/GAFTraversableLedgeProviderComponent.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationTypes.h"
+#include "Chooser.h"
+#include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "IObjectChooser.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Math/RotationMatrix.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterTraversalComponent)
 
@@ -18,9 +25,15 @@ UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+ACharacter* UGAFCharacterTraversalComponent::GetOwnerCharacter() const
+{
+	return Cast<ACharacter>(GetOwner());
+}
+
 bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	const FGAFTraversalCheckInputs& TraversalCheckInputs,
 	const FGAFTraversalSettings& TraversalSettings,
+	const FGAFMotionMatchingSettings& MotionMatchingSettings,
 	const EDrawDebugTrace::Type TraversalDebugType,
 	FGAFTraversalCheckResult& InOutTraversalCheckResult)
 {
@@ -52,7 +65,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// 优先使用角色配置覆盖的 TraceChannel，否则回退到项目级 TraversalConfig
 	const ECollisionChannel TraversalTraceChannel = FGAFTraversalCollisionResolver::GetTraversalCollisionChannel(&TraversalSettings);
 
-	// Step 1 : 通过接口获取翻越所需数据
+	// Step 1 : 通过角色数据接口获取 Traversal 所需的当前帧数据
+	// 这里不直接依赖具体 Character 子类，而是通过 IGAFCharacterDataProvider 读取 Mesh、MovementMode、Gait、Speed 等数据
 	CachedTraversalData = FGAFTraversalFrameData{};
 
 	const IGAFCharacterDataProvider* Provider =
@@ -85,19 +99,20 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	
 	EDrawDebugTrace::Type EffectiveDebugType = DebugDrawLevel >= 2 ? TraversalDebugType : EDrawDebugTrace::None;
 
-	// Step 2.1 Traversable Object Search : 往角色前方向进行一次Trace，尝试找到含有 TraversableLedgeProvider 的物体
-	// 如果找到了，就设置 Hit Component, 反之退出并返回失败原因
+	// Step 2.1 : 搜索可翻越物体
+	// 沿角色前方做一次胶囊体 Trace，命中的 Actor 必须挂有且只挂有一个 TraversableLedgeProvider
+	// 找到有效 Provider 后，保存本次命中的 HitComponent，后续 MotionWarping 或播放逻辑可以继续使用
 	
-	// 2.1.1 起点 = 角色位置 + 起点偏移值
+	// 2.1.1 : 起点 = 角色位置 + 起点偏移值
 	const FVector TraceStart = ActorLocation + TraceOriginOffset;
 	
-	// 2.1.2 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
+	// 2.1.2 : 终点 = 起点 + 角色前向*Trace距离 + 终点偏移值
 	const FVector TraceEnd =
 		TraceStart
 		+ TraceForwardDirection * TraceForwardDistance
 		+ TraceEndOffset;
 	
-	// 2.1.3 使用 Capsule Trace
+	// 2.1.3 : 使用 Capsule Trace
 	FHitResult TraversableSearchHitResult;
 	const bool bTraversableSearchHit = UKismetSystemLibrary::CapsuleTraceSingle(
 		this,
@@ -156,11 +171,12 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	InOutTraversalCheckResult.HitComponent = TraversableSearchHitResult.GetComponent();
 
-	// Step 2.2 Traversable Ledge Search : 如果检测到了可翻越物体，调用其内部函数找到 Front/Back Ledge
+	// Step 2.2 : 搜索可翻越边缘
+	// Provider 会根据命中位置和角色位置，在自己的 LedgePair 中选择 FrontLedge / BackLedge，并写入 CheckResult
 	bool bGetLedge = TraversableProvider->GetLedgeTransforms(TraversableSearchHitResult.ImpactPoint, ActorLocation, InOutTraversalCheckResult);
 	InOutTraversalCheckResult.HitComponent = TraversableSearchHitResult.GetComponent();
 	
-	// DEBUG(Step2): 绘制前后边缘位置
+	// DEBUG : 绘制 Step 2 找到的前后边缘位置，绿色表示 FrontLedge，蓝色表示 BackLedge。
 	// TODO:提取为单独模块
 	if (TraversalSettings.DebugDrawLevel >= 1)
 	{
@@ -197,17 +213,20 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		}
 	}
 
-	// Step 3.1 : If the traversable level block has a valid front ledge, continue the function. If not, exit early.
+	// Step 3.1 : FrontLedge 是 Traversal 的最低必要条件
+	// 没有 FrontLedge 就无法确定角色要靠近的攀爬点，因此直接退出
 	if (!InOutTraversalCheckResult.bHasFrontLedge)
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::CantFindFrontLedge;
 		return false;
 	}
 
-	// Step 3.2 Has Room Check : 从角色位置往前边缘进行Trace，判断角色是否能够移动到攀爬点(是否有障碍物)
+	// Step 3.2 : 检查角色是否有空间移动到 FrontLedge
+	// 从角色当前位置扫到 FrontLedge 前方的胶囊体中心位置，如果中途有阻挡，说明角色不能进入攀爬起点
 	
-	// 3.2.1 终点 = FrontLedge位置:1. 向 LedgeNormal 偏移一个胶囊体半径 2. 向 Z 轴上方偏移一个胶囊体半高
-	// 会加一个小的偏移量(2.0f)，LedgeNormal 固定为朝向可攀爬侧(角色进入方向)
+	// 3.2.1 : 计算角色靠近 FrontLedge 时胶囊体中心应该到达的位置
+	// 位置 = FrontLedge 位置 + 朝向角色侧的法线偏移一个半径 + 向上偏移一个半高
+	// 额外的 2.0f 是安全余量，避免刚好贴边时因为浮点误差被判定为重叠
 	// TODO:这种检查办法应该局限于非常方正的可攀爬物
 	const FVector HasRoomCheckFrontLedgeLocation = 
 		InOutTraversalCheckResult.FrontLedgeLocation 
@@ -216,7 +235,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	
 	EffectiveDebugType = DebugDrawLevel >= 3 ? TraversalDebugType : EDrawDebugTrace::None;
 
-	// 3.2.2 使用 Capsule Trace
+	// 3.2.2 : 使用胶囊体 Sweep 检查从当前位置到攀爬起点之间是否有阻挡
 	FHitResult HasRoomHitResult;
 	const bool bHasRoomHit = UKismetSystemLibrary::CapsuleTraceSingle(
 	   this,
@@ -241,7 +260,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		return false;
 	}
 
-	// Step 3.3: 障碍物高度 = FrontLedge 高度 - 角色胶囊底部高度
+	// Step 3.3 : 计算障碍物高度
+	// 高度 = FrontLedge 高度 - 当前角色胶囊底部高度，用于后续区分 Hurdle / Vault / Mantle 等动作条件
 	const FVector ActorCapsuleBottomLocation =
 		ActorLocation - FVector::ZAxisVector * TraceCapsuleHalfHeight;
 
@@ -250,12 +270,13 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 	InOutTraversalCheckResult.ObstacleHeight = ObstacleHeight;
 
-	// Step 3.4 Top Sweep : 如果存在 BackLedge，则从 FrontLedge 到 BackLedge 做一次顶部空间检测
-	// 用来判断角色胶囊体是否能从障碍物顶部移动到另一侧
+	// Step 3.4 : 顶部空间检测
+	// 如果存在 BackLedge，就从 FrontLedge 的可站位点扫到 BackLedge 的可站位点
+	// 这个检查用于判断角色胶囊体是否真的有空间越过障碍物顶部并移动到另一侧
 	if (InOutTraversalCheckResult.bHasBackLedge)
 	{
-		// 终点 = BackLedge位置: 1. 向 BackLedgeNormal 偏移一个胶囊体半径 2. 向 Z 轴上方偏移一个胶囊体半高
-		// 和 FrontLedge 的 HasRoomCheck 位置保持一致，使顶部 Sweep 检测的是角色胶囊体中心的移动路径
+		// 计算角色到达 BackLedge 另一侧时胶囊体中心应该处在的位置
+		// 它和 FrontLedge 的 HasRoomCheck 位置规则一致，使顶部 Sweep 检测的是胶囊体中心移动路径
 		const FVector HasRoomCheckBackLedgeLocation =
 			InOutTraversalCheckResult.BackLedgeLocation
 			+ InOutTraversalCheckResult.BackLedgeNormal * (TraceCapsuleRadius + 2.0f)
@@ -263,7 +284,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 		EffectiveDebugType = DebugDrawLevel >= 3 ? TraversalDebugType : EDrawDebugTrace::None;
 
-		// 从 FrontLedge 的可站位点扫到 BackLedge 的可站位点，检测顶部是否有阻挡
+		// 从 FrontLedge 可站位点扫到 BackLedge 可站位点，检测顶部路径是否被阻挡
 		FHitResult TopSweepHitResult;
 		const bool bTopSweepHit = UKismetSystemLibrary::CapsuleTraceSingle(
 			this,
@@ -283,12 +304,14 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 		if (!bTopSweepHit)
 		{
-			// Step 3.5A : 顶部没有阻挡，障碍物深度使用 FrontLedge 到 BackLedge 的水平距离
+			// Step 3.5A : 顶部没有阻挡
+			// 障碍物深度使用 FrontLedge 到 BackLedge 的水平距离，表示角色要越过的顶部跨度
 			InOutTraversalCheckResult.ObstacleDepth =
 				(InOutTraversalCheckResult.BackLedgeLocation - InOutTraversalCheckResult.FrontLedgeLocation).Size2D();
 
-			// Step 3.6 Back Floor Check : 从 BackLedge 上方往下扫，寻找另一侧可落脚地面
-			// 起点使用 BackLedge 的可站位点，终点向下移动障碍物高度并额外多扫一段距离，避免轻微高度差导致漏检
+			// Step 3.6 : BackFloor 检测
+			// 从 BackLedge 的可站位点向下扫，寻找另一侧可落脚地面
+			// 扫描距离 = 障碍物高度 + 额外距离，用于覆盖另一侧地面略低于当前角色底部的情况
 			const FVector BackFloorTraceEnd =
 				HasRoomCheckBackLedgeLocation
 				- FVector::ZAxisVector * (InOutTraversalCheckResult.ObstacleHeight + TraversalSettings.BackFloorTraceExtraDistance);
@@ -312,7 +335,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 
 			if (bBackFloorTraceHit && BackFloorHitResult.bBlockingHit)
 			{
-				// 找到地面时记录地面位置，并计算 BackLedge 到地面的高度差
+				// 找到地面时记录落地点，并计算 BackLedge 到 BackFloor 的高度差
+				// 这个高度会参与动作选择，例如区分落地式 Hurdle 和空中式 Vault
 				InOutTraversalCheckResult.bHasBackFloor = true;
 				InOutTraversalCheckResult.BackFloorLocation = BackFloorHitResult.Location;
 				InOutTraversalCheckResult.BackLedgeHeight =
@@ -320,7 +344,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 			}
 			else
 			{
-				// 没有找到地面时让 BackFloor 失效，不判定 Traversal 失败
+				// 没有找到地面时只让 BackFloor 失效，不直接判定 Traversal 失败
+				// Chooser 可以继续根据 bHasBackFloor=false 选择 Vault 或 Mantle 等动作
 				InOutTraversalCheckResult.bHasBackFloor = false;
 				InOutTraversalCheckResult.BackFloorLocation = FVector::ZeroVector;
 				InOutTraversalCheckResult.BackLedgeHeight = 0.0f;
@@ -328,8 +353,9 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		}
 		else
 		{
-			// Step 3.5B : 顶部空间被挡住，障碍物深度使用 FrontLedge 到阻挡点的水平距离
-			// 同时让 BackLedge 失效，后续逻辑会把它当作没有完整另一侧边缘的 Traversal 处理
+			// Step 3.5B：顶部空间被阻挡
+			// 障碍物深度改用 FrontLedge 到阻挡点的水平距离，并让 BackLedge / BackFloor 失效
+			// 后续 Chooser 会把它当作没有完整另一侧边缘的 Traversal 处理
 			InOutTraversalCheckResult.ObstacleDepth =
 				(TopSweepHitResult.ImpactPoint - InOutTraversalCheckResult.FrontLedgeLocation).Size2D();
 			InOutTraversalCheckResult.bHasBackLedge = false;
@@ -337,21 +363,410 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		}
 	}
 
-	// Step 4.1: Send the front ledge location to the Anim BP using an interface.
-	// This transform will be used for a custom channel within the following Motion Matching search.
+	// Step 4.1 : 把交互目标写入 AnimInstance
+	// Motion Matching 的自定义 Channel 需要知道角色要对齐到哪个 Ledge
+	// 这里用 FrontLedgeLocation 作为位置，用 FrontLedgeNormal 构造朝向
+	// 通过接口写入 AnimInstance 的 InteractionTransform
+	USkeletalMeshComponent* Mesh = CachedTraversalData.Mesh;
+	UAnimInstance* AnimInstance = IsValid(Mesh)
+		? Mesh->GetAnimInstance()
+		: nullptr;
+	IGAFAnimInstanceDataProvider* AnimProvider = Cast<IGAFAnimInstanceDataProvider>(AnimInstance);
 
-	// Step 4.2: Evaluate a chooser with a PoseMatch Column to select the best montages that
-	// match the conditions of the traversal check (Inside the Chooser, the Posematch Column is at the far right).
-	// The chooser outputs the best montage with the right entry frame (start time) based on the distance to the ledge,
-	// and the current characters pose(through anim instance). The Treversal Check struct is updated with this data and
-	// will be used to play the montage through the PerformTraversalAction fucntion in Step: 5.5.
+	if (!IsValid(AnimInstance) || AnimProvider == nullptr)
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidAnimInstance;
+		UE_LOG(LogGAFTraversal, Warning,
+			TEXT("%s failed to try traversal action: anim instance data provider is invalid on [%s]."),
+			*GetNameSafe(this),
+			*GetNameSafe(Character));
+		return false;
+	}
 
-	// DEBUG: Print out the resulting conditions and parameters.
+	// 这里构造的旋转值的的 Z 轴朝向 FrontLedgeNormal
+	// TODO:更详细地解释为什么这里要这么写
+	const FVector InteractionNormal =
+		InOutTraversalCheckResult.FrontLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::UpVector);
+	const FTransform InteractionTransform{
+		FRotationMatrix::MakeFromZ(InteractionNormal).ToQuat(),
+		InOutTraversalCheckResult.FrontLedgeLocation,
+		FVector::OneVector
+	};
 
-	// Step 5.1: Continue if there is a valid action type. If none of the conditions were met, no action can be performed, therefore exit the function.
+	AnimProvider->SetTraversalInteractionTransform(InteractionTransform);
 
-	// Step 5.2: Finally, if the check was a success and a montage was found, trigger the Traversal Event
-	return false;
+	// Step 4.2 : 评估 Traversal Chooser，选择最合适的 Montage 和起始时间
+	// Chooser 会使用一列专门的 PoseMatch Column 进行一次临时 MotionMatch
+	// ChooserInput 会包含检测结果、角色状态、到 ledge 的距离以及当前 PoseHistory
+	// Chooser 会根据自定义Feature:里Ledge的最近距离输出最佳的进入时机写回 CheckResult
+	// 供后续 Step 5 PerformTraversalAction 播放蒙太奇使用
+	const UChooserTable* TraversalMontageChooser = MotionMatchingSettings.TraversalMontageChooser.Get();
+	if (!IsValid(TraversalMontageChooser))
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidTraversalChooser;
+		UE_LOG(LogGAFTraversal, Warning,
+			TEXT("%s failed to try traversal action: traversal montage chooser is invalid on [%s]."),
+			*GetNameSafe(this),
+			*GetNameSafe(Character));
+		return false;
+	}
+
+	FPoseHistoryReference PoseHistory;
+	if (!AnimProvider->GetTraversalPoseHistoryReference(MotionMatchingSettings.TraversalPoseHistoryTag, PoseHistory))
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidPoseHistory;
+		UE_LOG(LogGAFTraversal, Warning,
+			TEXT("%s failed to try traversal action: pose history [%s] is invalid on [%s]."),
+			*GetNameSafe(this),
+			*MotionMatchingSettings.TraversalPoseHistoryTag.ToString(),
+			*GetNameSafe(Character));
+		return false;
+	}
+
+	FGAFTraversalChooserInputs ChooserInputs;
+	ChooserInputs.ActionType = InOutTraversalCheckResult.ActionType;
+	ChooserInputs.bHasFrontLedge = InOutTraversalCheckResult.bHasFrontLedge;
+	ChooserInputs.bHasBackLedge = InOutTraversalCheckResult.bHasBackLedge;
+	ChooserInputs.bHasBackFloor = InOutTraversalCheckResult.bHasBackFloor;
+	ChooserInputs.ObstacleHeight = InOutTraversalCheckResult.ObstacleHeight;
+	ChooserInputs.ObstacleDepth = InOutTraversalCheckResult.ObstacleDepth;
+	ChooserInputs.BackLedgeHeight = InOutTraversalCheckResult.BackLedgeHeight;
+	ChooserInputs.MovementMode = CachedTraversalData.MovementMode;
+	ChooserInputs.Gait = CachedTraversalData.Gait;
+	ChooserInputs.Speed = CachedTraversalData.Speed;
+	ChooserInputs.PoseHistory = PoseHistory;
+
+	// Mesh 距离 FrontLedge 的位置
+	const FVector DistanceSourceLocation = IsValid(Mesh)
+		? Mesh->GetComponentLocation()
+		: ActorLocation;
+	ChooserInputs.DistanceToLedge =
+		FVector::Distance(DistanceSourceLocation, InOutTraversalCheckResult.FrontLedgeLocation);
+
+	FGAFTraversalChooserOutputs ChooserOutputs;
+
+	// 构造 Chooser Context
+	// 第一个参数放 AnimInstance，让 Chooser 可以读取对象上下文
+	FChooserEvaluationContext ChooserContext{ AnimInstance };
+	// 第二个参数放 ChooserInputs，作为条件筛选和 PoseMatch 的输入
+	ChooserContext.AddStructParam(ChooserInputs);
+	// 第三个参数放 ChooserOutputs，并登记到 OutputArrays，让 Output Struct Column 可以把行数据写回这个结构
+	ChooserContext.OutputArrays.Add({ static_cast<uint32>(ChooserContext.Params.Num()) });
+	ChooserContext.AddStructParam(ChooserOutputs);
+
+	UObject* ResultObject = nullptr;
+	// EvaluateChooser 通过回调逐个返回命中的 Result Object
+	// 这里捕获第一个 ResultObject 后返回 Stop，表示只需要第一个匹配结果
+	// 同时 Chooser 的 Output Struct Column 会在评估过程中把 ActionType / MontageStartTime 等写入 ChooserOutputs
+	const FObjectChooserBase::EIteratorStatus ChooserStatus = UChooserTable::EvaluateChooser(
+		ChooserContext,
+		TraversalMontageChooser,
+		FObjectChooserBase::FObjectChooserIteratorCallback::CreateLambda(
+			[&ResultObject](UObject* InResultObject)
+			{
+				ResultObject = InResultObject;
+				return FObjectChooserBase::EIteratorStatus::Stop;
+			}));
+
+	// 当前流程不直接依赖 ChooserStatus 做分支
+	// 成功与否最终由 Output Struct 和 ResultObject 是否能给出有效 Montage 判断
+	// 这里显式丢弃返回值，避免编译器产生未使用变量警告
+	(void)ChooserStatus;
+
+	// 优先使用 Output Struct 中配置的 Montage
+	// 如果 Chooser 没有通过 Output Struct 输出 Montage，则尝试把普通 Result Object 当作 Montage 使用
+	UAnimMontage* SelectedMontage = ChooserOutputs.ChosenMontage.Get();
+	if (!IsValid(SelectedMontage))
+	{
+		SelectedMontage = Cast<UAnimMontage>(ResultObject);
+	}
+
+	if (!IsValid(SelectedMontage))
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::MontageSelectionFailed;
+		return false;
+	}
+
+	// 如果 ActionType 无效则判定失败
+	if (ChooserOutputs.ActionType == EGAFTraversalActionType::None)
+	{
+		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::TraversalCheckFailed;
+		return false;
+	}
+
+	InOutTraversalCheckResult.ActionType = ChooserOutputs.ActionType;
+	InOutTraversalCheckResult.ChosenMontage = SelectedMontage;
+	InOutTraversalCheckResult.StartTime = ChooserOutputs.MontageStartTime;
+	InOutTraversalCheckResult.PlayRate = MotionMatchingSettings.DefaultTraversalPlayRate;
+
+	// DEBUG : 打印最终检测条件和 Chooser 选择结果
+	DebugPrintTraversalCheckResult(InOutTraversalCheckResult, TraversalSettings);
+
+	// Step 5.1 : 实际播放 Montage / MotionWarping 
+	PerformTraversalAction(InOutTraversalCheckResult, TraversalSettings);
+	
+	// 返回 true 的含义是 “ Traversal 可以执行 ”，调用方不再 fallback 到普通 Jump
+	return true;
+}
+
+bool UGAFCharacterTraversalComponent::PerformTraversalAction(
+	const FGAFTraversalCheckResult& TraversalResult,
+	const FGAFTraversalSettings& TraversalSettings)
+{
+	ACharacter* Character = GetOwnerCharacter();
+	if (!IsValid(Character))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: owner is not a valid Character."), *GetNameSafe(this));
+		return false;
+	}
+
+	UMotionWarpingComponent* MotionWarping = CachedTraversalData.MotionWarping;
+	if (!IsValid(MotionWarping))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: MotionWarpingComponent is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
+		return false;
+	}
+
+	UAnimMontage* ChosenMontage = TraversalResult.ChosenMontage.Get();
+	if (!IsValid(ChosenMontage))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: chosen montage is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
+		return false;
+	}
+
+	if (!TraversalResult.bHasFrontLedge)
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: traversal result has no FrontLedge on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
+		return false;
+	}
+
+	USkeletalMeshComponent* Mesh = CachedTraversalData.Mesh;
+	UAnimInstance* AnimInstance = IsValid(Mesh)
+		? Mesh->GetAnimInstance()
+		: nullptr;
+	if (!IsValid(AnimInstance))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: anim instance is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
+		return false;
+	}
+
+	// Step 5.1 : 更新 FrontLedge WarpTarget
+	// FrontLedge 是所有 Traversal 动作都会使用的主要对齐点
+	// 位置使用 FrontLedgeLocation 并略微上抬 0.5，旋转使用 -FrontLedgeNormal 作为 X 轴，让角色面向边缘
+	const FVector FrontLedgeNormal = TraversalResult.FrontLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, Character->GetActorForwardVector());
+	const FVector FrontLedgeTargetLocation =
+		TraversalResult.FrontLedgeLocation
+		+ FVector{ 0.0f, 0.0f, 0.5f };
+	const FRotator FrontLedgeTargetRotation =
+		FRotationMatrix::MakeFromX(-FrontLedgeNormal).Rotator();
+
+	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
+		TraversalSettings.FrontLedgeWarpTargetName,
+		FrontLedgeTargetLocation,
+		FrontLedgeTargetRotation);
+
+	// Step 5.2 : 判断是否需要 BackLedge WarpTarget
+	// Hurdle 和 Vault 会越过障碍物，需要用 BackLedge 对齐越过边缘的位置
+	// 其他动作不应该保留旧的 BackLedge 目标，否则可能影响后续 MotionWarping
+	float AnimatedDistanceFromFrontLedgeToBackLedge{ 0.0f };
+	bool bShouldUseBackLedgeWarpTarget =
+		TraversalResult.bHasBackLedge
+		&& (TraversalResult.ActionType == EGAFTraversalActionType::Hurdle
+			|| TraversalResult.ActionType == EGAFTraversalActionType::Vault);
+
+	if (bShouldUseBackLedgeWarpTarget)
+	{
+		TArray<FMotionWarpingWindowData> BackLedgeWarpWindows;
+		UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
+			ChosenMontage,
+			TraversalSettings.BackLedgeWarpTargetName,
+			BackLedgeWarpWindows);
+
+		bShouldUseBackLedgeWarpTarget = false;
+
+		// Step 5.3 : 读取 BackLedge 窗口结束时的 Distance_From_Ledge 曲线值
+		// 不同 Traversal 动画移动距离不固定，所以需要用曲线记录动画到达 BackLedge 时离 FrontLedge 的实际距离
+		if (!BackLedgeWarpWindows.IsEmpty())
+		{
+			const float CurveSampleTime = BackLedgeWarpWindows[0].EndTime;
+
+			if (ChosenMontage->SlotAnimTracks.Num() > 0)
+			{
+				const FAnimTrack& AnimTrack = ChosenMontage->SlotAnimTracks[0].AnimTrack;
+				if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(CurveSampleTime))
+				{
+					const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
+					if (IsValid(AnimReference) && AnimReference->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
+					{
+						float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(CurveSampleTime);
+						AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
+
+						const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
+						AnimatedDistanceFromFrontLedgeToBackLedge =
+							AnimReference->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
+						bShouldUseBackLedgeWarpTarget = true;
+					}
+				}
+			}
+
+			if (!bShouldUseBackLedgeWarpTarget && ChosenMontage->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
+			{
+				const FAnimExtractContext CurveContext{ static_cast<double>(CurveSampleTime) };
+				AnimatedDistanceFromFrontLedgeToBackLedge =
+					ChosenMontage->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
+				bShouldUseBackLedgeWarpTarget = true;
+			}
+		}
+	}
+
+	if (bShouldUseBackLedgeWarpTarget)
+	{
+		// Step 5.4 : 更新 BackLedge WarpTarget
+		// BackLedge 只需要位置，旋转保持默认即可
+		MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
+			TraversalSettings.BackLedgeWarpTargetName,
+			TraversalResult.BackLedgeLocation,
+			FRotator::ZeroRotator);
+	}
+	else
+	{
+		MotionWarping->RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
+	}
+
+	// Step 5.5 : 判断是否需要 BackFloor WarpTarget
+	// 只有 Hurdle 会落到另一侧地面，因此只有 Hurdle 需要 BackFloor
+	// 非 Hurdle 动作要清理 BackFloor，防止旧目标被后续动画错误使用
+	float AnimatedDistanceFromFrontLedgeToBackFloor{ 0.0f };
+	bool bShouldUseBackFloorWarpTarget =
+		TraversalResult.bHasBackFloor
+		&& TraversalResult.ActionType == EGAFTraversalActionType::Hurdle;
+
+	if (bShouldUseBackFloorWarpTarget)
+	{
+		TArray<FMotionWarpingWindowData> BackFloorWarpWindows;
+		UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
+			ChosenMontage,
+			TraversalSettings.BackFloorWarpTargetName,
+			BackFloorWarpWindows);
+
+		bShouldUseBackFloorWarpTarget = false;
+
+		// Step 5.6 : 读取 BackFloor 窗口结束时的 Distance_From_Ledge 曲线值
+		// 这个值表示动画落地时离 FrontLedge 的实际距离，用来修正 BackFloor 的水平位置
+		if (!BackFloorWarpWindows.IsEmpty())
+		{
+			const float CurveSampleTime = BackFloorWarpWindows[0].EndTime;
+
+			if (ChosenMontage->SlotAnimTracks.Num() > 0)
+			{
+				const FAnimTrack& AnimTrack = ChosenMontage->SlotAnimTracks[0].AnimTrack;
+				if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(CurveSampleTime))
+				{
+					const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
+					if (IsValid(AnimReference) && AnimReference->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
+					{
+						float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(CurveSampleTime);
+						AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
+
+						const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
+						AnimatedDistanceFromFrontLedgeToBackFloor =
+							AnimReference->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
+						bShouldUseBackFloorWarpTarget = true;
+					}
+				}
+			}
+
+			if (!bShouldUseBackFloorWarpTarget && ChosenMontage->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
+			{
+				const FAnimExtractContext CurveContext{ static_cast<double>(CurveSampleTime) };
+				AnimatedDistanceFromFrontLedgeToBackFloor =
+					ChosenMontage->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
+				bShouldUseBackFloorWarpTarget = true;
+			}
+		}
+	}
+
+	if (bShouldUseBackFloorWarpTarget)
+	{
+		// Step 5.7 : 更新 BackFloor WarpTarget
+		// X/Y 使用动画曲线距离从 BackLedge 沿 BackLedgeNormal 推出，Z 使用真实检测到的 BackFloor 高度
+		// 这样不同动画可以落在不同水平距离，同时保持落地点高度贴合检测结果
+		const float BackFloorHorizontalOffset =
+			FMath::Abs(AnimatedDistanceFromFrontLedgeToBackLedge - AnimatedDistanceFromFrontLedgeToBackFloor);
+		const FVector BackFloorHorizontalLocation =
+			TraversalResult.BackLedgeLocation
+			+ TraversalResult.BackLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector)
+			* BackFloorHorizontalOffset;
+		const FVector BackFloorTargetLocation{
+			BackFloorHorizontalLocation.X,
+			BackFloorHorizontalLocation.Y,
+			TraversalResult.BackFloorLocation.Z
+		};
+
+		MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
+			TraversalSettings.BackFloorWarpTargetName,
+			BackFloorTargetLocation,
+			FRotator::ZeroRotator);
+	}
+	else
+	{
+		MotionWarping->RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
+	}
+
+	// Step 5.8 : 播放选中的 Traversal Montage
+	// StartTime 来自 Chooser / PoseMatch，用于从最匹配当前姿势的位置开始播放
+	const float MontageDuration = AnimInstance->Montage_Play(
+		ChosenMontage,
+		TraversalResult.PlayRate,
+		EMontagePlayReturnType::Duration,
+		TraversalResult.StartTime);
+
+	if (MontageDuration <= 0.0f)
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: montage [%s] could not be played on [%s]."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *GetNameSafe(Character));
+		return false;
+	}
+
+	// Step 5.9 : 进入 Traversal 执行状态
+	// 播放过程中忽略本次命中的障碍组件，并切到 Flying，避免 CharacterMovement 抢占 RootMotion 位移
+	if (IsValid(CachedTraversalData.Capsule) && IsValid(TraversalResult.HitComponent.Get()))
+	{
+		CachedTraversalData.Capsule->IgnoreComponentWhenMoving(TraversalResult.HitComponent.Get(), true);
+	}
+
+	if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+	{
+		Movement->SetMovementMode(MOVE_Flying);
+	}
+
+	bDoingTraversalAction = true;
+	return true;
+}
+
+// In order for the actor to move to the exact points on the obstacle, 
+// we use a Motion Warping component which warps the montage’s root motion using notify states on the montage. 
+// This function updates the warp targets in the component using the ledge locations.
+void UGAFCharacterTraversalComponent::UpdateWarpTargets()
+{
+	const UMotionWarpingComponent* MotionWarping = CachedTraversalData.MotionWarping;
+	// Step 1 : Update the FrontLedge warp target using the front ledge's location and rotation.
+	// Step 2 : If the action type was a hurdle or a vault, we need to also update the BackLedge target. If it is not a hurdle or vault, remove it.
+	
+	// Step 3 : Because the traversal animations move at different distances (no fixed metrics), we need to know how far the animation moves 
+	// in order to warp it properly. Here we cache a curve value at the end of the Back Ledge warp window to 
+	// determine how far the animation is from the front ledge once the character reaches the back ledge location in the animation.
+	
+	// Step 4 : Update the BackLedge warp target.
+	
+	// Step 5 : If the action type was a hurdle, we need to also update the BackFloor target. If it is not a hurdle, remove it.
+	
+	// Step 6 : Caches a curve value at the end of the Back Floor warp window to determine 
+	// how far the animation is from the front ledge once the character touches the ground.
+	
+	// Step 7 : Since the animations may land on the floor at different distances (a run hurdle may travel further than a walk or stand hurdle), 
+	// use the total animated distance away from the back ledge as the X and Y values of the BackFloor warp point. 
+	// This could technically cause some collision issues if the floor is not flat, or there is an bostacle in the way, 
+	// therefore having fixed metrics for all traversal animations would be an improvement.
 }
 
 void UGAFCharacterTraversalComponent::DebugPrintTraversalFailureReason(
@@ -383,7 +798,52 @@ void UGAFCharacterTraversalComponent::DebugPrintTraversalFailureReason(
 		FName(TEXT("TraversalFailureReason")));
 }
 
-ACharacter* UGAFCharacterTraversalComponent::GetOwnerCharacter() const
+// 打印 Result 结果
+void UGAFCharacterTraversalComponent::DebugPrintTraversalCheckResult(
+	const FGAFTraversalCheckResult& TraversalCheckResult,
+	const FGAFTraversalSettings& TraversalSettings) const
 {
-	return Cast<ACharacter>(GetOwner());
+	if (TraversalSettings.DebugDrawLevel < 1)
+	{
+		return;
+	}
+
+	const FString ConditionDebugString = FString::Printf(
+		TEXT("Has Front Ledge: %s\nHas Back Ledge: %s\nHas Back Floor: %s\nObstacle Height: %.2f\nObstacle Depth: %.2f\nBack Ledge Height: %.2f"),
+		TraversalCheckResult.bHasFrontLedge ? TEXT("true") : TEXT("false"),
+		TraversalCheckResult.bHasBackLedge ? TEXT("true") : TEXT("false"),
+		TraversalCheckResult.bHasBackFloor ? TEXT("true") : TEXT("false"),
+		TraversalCheckResult.ObstacleHeight,
+		TraversalCheckResult.ObstacleDepth,
+		TraversalCheckResult.BackLedgeHeight);
+
+	UKismetSystemLibrary::PrintString(
+		this,
+		ConditionDebugString,
+		true,
+		false,
+		TraversalSettings.DebugPrintColor,
+		TraversalSettings.DebugPrintDuration,
+		FName(TEXT("TraversalCheckResult")));
+
+	const UEnum* ActionTypeEnum = StaticEnum<EGAFTraversalActionType>();
+	const FString ActionTypeString = IsValid(ActionTypeEnum)
+		? ActionTypeEnum->GetNameStringByValue(static_cast<int64>(TraversalCheckResult.ActionType))
+		: TEXT("Unknown");
+
+	const FString ChooserDebugString = FString::Printf(
+		TEXT("Action Type: %s\nChosen Montage: %s\nStart Time: %.2f\nPlay Rate: %.2f"),
+		*ActionTypeString,
+		*GetNameSafe(TraversalCheckResult.ChosenMontage.Get()),
+		TraversalCheckResult.StartTime,
+		TraversalCheckResult.PlayRate);
+
+	UKismetSystemLibrary::PrintString(
+		this,
+		ChooserDebugString,
+		true,
+		false,
+		TraversalSettings.DebugPrintColor,
+		TraversalSettings.DebugPrintDuration,
+		FName(TEXT("TraversalChooserResult")));
 }

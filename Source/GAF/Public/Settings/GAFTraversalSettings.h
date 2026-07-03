@@ -46,6 +46,22 @@ struct GAF_API FGAFTraversalSettings
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Trace", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float BackFloorTraceExtraDistance{ 50.0f };
 
+	// FrontLedge MotionWarping 目标名，需要与 Montage 中的 WarpTargetName 一致
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|MotionWarping")
+	FName FrontLedgeWarpTargetName{ TEXT("FrontLedge") };
+
+	// BackLedge MotionWarping 目标名，需要与 Montage 中的 WarpTargetName 一致
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|MotionWarping")
+	FName BackLedgeWarpTargetName{ TEXT("BackLedge") };
+
+	// BackFloor MotionWarping 目标名，需要与 Montage 中的 WarpTargetName 一致
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|MotionWarping")
+	FName BackFloorWarpTargetName{ TEXT("BackFloor") };
+
+	// Traversal 动画中记录离 FrontLedge 距离的曲线名
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|MotionWarping")
+	FName DistanceFromLedgeCurveName{ TEXT("Distance_From_Ledge") };
+
 	// 是否用角色配置覆盖 Project Settings 中的 Traversal Trace Channel
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Traversal|Collision")
 	bool bOverrideTraversalTraceChannel{ false };

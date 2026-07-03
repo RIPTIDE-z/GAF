@@ -319,6 +319,7 @@ void AGAFCharacterPlayable::Input_OnJumpStarted(const FInputActionValue& ActionV
 	if (!CharacterTraversalComponent->TryTraversalAction(
 		GetTraversalCheckInputs(),
 		GetDefaultCharacterSettings().TraversalSettings,
+		GetDefaultCharacterSettings().MotionMatchingSettings,
 		EDrawDebugTrace::ForDuration,
 		TraversalCheckResult))
 	{
@@ -347,6 +348,7 @@ void AGAFCharacterPlayable::Input_OnJumpTriggered(const FInputActionValue& Actio
 		const bool bTraversalSucceeded = CharacterTraversalComponent->TryTraversalAction(
 			GetTraversalCheckInputs(),
 			GetDefaultCharacterSettings().TraversalSettings,
+			GetDefaultCharacterSettings().MotionMatchingSettings,
 			EDrawDebugTrace::ForOneFrame,
 			TraversalCheckResult);
 

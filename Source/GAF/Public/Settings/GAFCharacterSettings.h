@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Settings/GAFMovementSettings.h"
+#include "Settings/GAFMotionMatchingSettings.h"
 #include "Settings/GAFTraversalSettings.h"
 #include "Engine/DataAsset.h"
 
@@ -19,4 +20,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
 	FGAFTraversalSettings TraversalSettings;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
+	FGAFMotionMatchingSettings MotionMatchingSettings;
 };
