@@ -19,6 +19,96 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFCharacterTraversalComponent)
 
+namespace
+{
+// 当前使用 Switch 手动对应错误原因，减少反射解析的开销
+// TODO：换成更高效的框架
+const TCHAR* LexToString(const EGAFTraversalFailureReason FailureReason)
+{
+	switch (FailureReason)
+	{
+	case EGAFTraversalFailureReason::None:
+		return TEXT("None");
+	case EGAFTraversalFailureReason::InvalidOwner:
+		return TEXT("InvalidOwner");
+	case EGAFTraversalFailureReason::InvalidMovementComponent:
+		return TEXT("InvalidMovementComponent");
+	case EGAFTraversalFailureReason::AlreadyDoingTraversal:
+		return TEXT("AlreadyDoingTraversal");
+	case EGAFTraversalFailureReason::CantFindTraversableObject:
+		return TEXT("CantFindTraversableObject");
+	case EGAFTraversalFailureReason::CantFindFrontLedge:
+		return TEXT("CantFindFrontLedge");
+	case EGAFTraversalFailureReason::NoRoomMoveToFrontLedge:
+		return TEXT("NoRoomMoveToFrontLedge");
+	case EGAFTraversalFailureReason::InvalidAnimInstance:
+		return TEXT("InvalidAnimInstance");
+	case EGAFTraversalFailureReason::InvalidPoseHistory:
+		return TEXT("InvalidPoseHistory");
+	case EGAFTraversalFailureReason::InvalidTraversalChooser:
+		return TEXT("InvalidTraversalChooser");
+	case EGAFTraversalFailureReason::TraversalCheckFailed:
+		return TEXT("TraversalCheckFailed");
+	case EGAFTraversalFailureReason::MontageSelectionFailed:
+		return TEXT("MontageSelectionFailed");
+	case EGAFTraversalFailureReason::InvalidTraversalMesh:
+		return TEXT("InvalidTraversalMesh");
+	case EGAFTraversalFailureReason::InvalidMotionWarpingComponent:
+		return TEXT("InvalidMotionWarpingComponent");
+	case EGAFTraversalFailureReason::InvalidTraversalMontage:
+		return TEXT("InvalidTraversalMontage");
+	case EGAFTraversalFailureReason::InvalidTraversalHitComponent:
+		return TEXT("InvalidTraversalHitComponent");
+	case EGAFTraversalFailureReason::MissingBackLedgeWarpWindow:
+		return TEXT("MissingBackLedgeWarpWindow");
+	case EGAFTraversalFailureReason::MissingBackFloorWarpWindow:
+		return TEXT("MissingBackFloorWarpWindow");
+	case EGAFTraversalFailureReason::MissingDistanceFromLedgeCurve:
+		return TEXT("MissingDistanceFromLedgeCurve");
+	case EGAFTraversalFailureReason::WarpTargetUpdateFailed:
+		return TEXT("WarpTargetUpdateFailed");
+	case EGAFTraversalFailureReason::MontagePlayFailed:
+		return TEXT("MontagePlayFailed");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
+bool TryEvaluateMontageCurveAtTime(
+	const UAnimMontage& Montage,
+	const FName CurveName,
+	const float MontageSampleTime,
+	float& OutCurveValue)
+{
+	if (Montage.SlotAnimTracks.Num() > 0)
+	{
+		const FAnimTrack& AnimTrack = Montage.SlotAnimTracks[0].AnimTrack;
+		if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(MontageSampleTime))
+		{
+			const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
+			if (IsValid(AnimReference) && AnimReference->HasCurveData(CurveName))
+			{
+				float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(MontageSampleTime);
+				AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
+
+				const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
+				OutCurveValue = AnimReference->EvaluateCurveData(CurveName, CurveContext);
+				return true;
+			}
+		}
+	}
+
+	if (Montage.HasCurveData(CurveName))
+	{
+		const FAnimExtractContext CurveContext{ static_cast<double>(MontageSampleTime) };
+		OutCurveValue = Montage.EvaluateCurveData(CurveName, CurveContext);
+		return true;
+	}
+
+	return false;
+}
+}
+
 UGAFCharacterTraversalComponent::UGAFCharacterTraversalComponent()
 {
 	// 翻越组件不需要Tick，每次翻越才会调用，状态也都是临时状态
@@ -502,7 +592,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// DEBUG : 打印最终检测条件和 Chooser 选择结果
 	DebugPrintTraversalCheckResult(InOutTraversalCheckResult, TraversalSettings);
 
-	// Step 5.1 : 实际播放 Montage / MotionWarping 
+	// Step 5 : 实际播放 Montage / MotionWarping 
 	return PerformTraversalAction(InOutTraversalCheckResult, TraversalSettings);
 }
 
@@ -566,25 +656,7 @@ bool UGAFCharacterTraversalComponent::PerformTraversalAction(
 		return false;
 	}
 
-	// Step 5.1 : 缓存本次执行结果并进入 Traversal 状态
-	// 后续 Montage 回调会使用 ActiveTraversalResult 恢复碰撞和 MovementMode
-	ActiveTraversalResult = InOutTraversalResult;
-	bDoingTraversalAction = true;
-
-	// Step 5.2 : 更新 MotionWarping 所需的 WarpTarget
-	// 这一步只负责把检测结果转换成 MotionWarping 目标，不负责播放 Montage
-	if (!UpdateWarpTargets(InOutTraversalResult, TraversalSettings))
-	{
-		if (InOutTraversalResult.FailureReason == EGAFTraversalFailureReason::None)
-		{
-			InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::WarpTargetUpdateFailed;
-		}
-
-		FinishTraversalAction();
-		return false;
-	}
-
-	// Step 5.3 : 播放选中的 Traversal Montage
+	// Step 5.1 : 播放选中的 Traversal Montage
 	// StartTime 来自 Chooser / PoseMatch，用于从最匹配当前姿势的位置开始播放
 	const float MontageDuration = AnimInstance->Montage_Play(
 		ChosenMontage,
@@ -596,12 +668,13 @@ bool UGAFCharacterTraversalComponent::PerformTraversalAction(
 	{
 		InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::MontagePlayFailed;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to perform traversal action: montage [%s] could not be played on [%s]."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *GetNameSafe(Character));
-		FinishTraversalAction();
 		return false;
 	}
 
-	// Step 5.4 : 绑定 Montage 回调
-	// BlendOut / Ended 都会走组件自己的收尾逻辑，保证任意结束路径都能恢复状态
+	// Step 5.2 : 绑定 Montage 回调
+	// BlendingOut 覆盖蓝图 On Blend Out / On Interrupted
+	// Ended 覆盖 On Completed / On Interrupted
+	// 两个回调都走同一个收尾函数，FinishTraversalAction
 	FOnMontageBlendingOutStarted BlendingOutDelegate;
 	BlendingOutDelegate.BindUObject(this, &ThisClass::HandleTraversalMontageBlendingOut);
 	AnimInstance->Montage_SetBlendingOutDelegate(BlendingOutDelegate, ChosenMontage);
@@ -609,6 +682,13 @@ bool UGAFCharacterTraversalComponent::PerformTraversalAction(
 	FOnMontageEnded EndedDelegate;
 	EndedDelegate.BindUObject(this, &ThisClass::HandleTraversalMontageEnded);
 	AnimInstance->Montage_SetEndDelegate(EndedDelegate, ChosenMontage);
+
+	// Step 5.3 : PlayMontage 后进入 Traversal 状态
+	ActiveTraversalResult = InOutTraversalResult;
+	bDoingTraversalAction = true;
+
+	// Step 5.4 : 调用 UpdateWarpTargets 更新 MotionWarping 所需的 WarpTargets
+	UpdateWarpTargets(InOutTraversalResult, TraversalSettings);
 
 	// Step 5.5 : 应用执行期间的移动状态
 	// 播放过程中忽略本次命中的障碍组件，并切到 Flying，避免 CharacterMovement 抢占 RootMotion 位移
@@ -649,14 +729,18 @@ void UGAFCharacterTraversalComponent::FinishTraversalAction()
 		return;
 	}
 
+	// Montage 回调进入收尾后立即解除 Traversal 状态
+	bDoingTraversalAction = false;
+
 	ACharacter* Character = GetOwnerCharacter();
 
-	// 取消 Traversal 期间对命中组件的移动忽略
+	// 恢复 Traversal 期间忽略的障碍组件
 	if (IsValid(CachedTraversalData.Capsule) && IsValid(ActiveTraversalResult.HitComponent.Get()))
 	{
 		CachedTraversalData.Capsule->IgnoreComponentWhenMoving(ActiveTraversalResult.HitComponent.Get(), false);
 	}
 
+	// 根据动作类型恢复 MovementMode，Vault 结束后保持 Falling，其余回到 Walking
 	if (IsValid(Character))
 	{
 		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
@@ -671,229 +755,207 @@ void UGAFCharacterTraversalComponent::FinishTraversalAction()
 		}
 	}
 
-	bDoingTraversalAction = false;
 	ActiveTraversalResult.Reset();
 }
 
-// In order for the actor to move to the exact points on the obstacle, 
-// we use a Motion Warping component which warps the montage’s root motion using notify states on the montage. 
-// This function updates the warp targets in the component using the ledge locations.
-bool UGAFCharacterTraversalComponent::UpdateWarpTargets(
-	FGAFTraversalCheckResult& InOutTraversalResult,
+// 使用 Motion Warping 组件让 Actor 移动到障碍物上的精确位置
+// 使用边缘位置来更新该组件中的 Warp Target
+void UGAFCharacterTraversalComponent::UpdateWarpTargets(
+	const FGAFTraversalCheckResult& TraversalResult,
 	const FGAFTraversalSettings& TraversalSettings)
 {
 	ACharacter* Character = GetOwnerCharacter();
 	if (!IsValid(Character))
 	{
-		InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::InvalidOwner;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: owner is not a valid Character."), *GetNameSafe(this));
-		return false;
+		return;
 	}
 
 	UMotionWarpingComponent* MotionWarping = CachedTraversalData.MotionWarping;
 	if (!IsValid(MotionWarping))
 	{
-		InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::InvalidMotionWarpingComponent;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: MotionWarpingComponent is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
-		return false;
+		return;
 	}
 
-	UAnimMontage* ChosenMontage = InOutTraversalResult.ChosenMontage.Get();
+	UAnimMontage* ChosenMontage = TraversalResult.ChosenMontage.Get();
 	if (!IsValid(ChosenMontage))
 	{
-		InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::InvalidTraversalMontage;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: chosen montage is invalid on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
-		return false;
+		return;
 	}
 
-	if (!InOutTraversalResult.bHasFrontLedge)
+	if (!TraversalResult.bHasFrontLedge)
 	{
-		InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::CantFindFrontLedge;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: traversal result has no FrontLedge on [%s]."), *GetNameSafe(this), *GetNameSafe(Character));
-		return false;
+		return;
 	}
 
-	// Step 1 : Update the FrontLedge warp target using the front ledge's location and rotation.
-	// FrontLedge 是所有 Traversal 动作都会使用的主要对齐点
-	// 位置使用 FrontLedgeLocation 并略微上抬 0.5，旋转使用 -FrontLedgeNormal 作为 X 轴，让角色面向边缘
-	const FVector FrontLedgeNormal = InOutTraversalResult.FrontLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, Character->GetActorForwardVector());
+	float AnimatedDistanceFromFrontLedgeToBackLedge{ 0.0f };
+	
+	// 分Front BackLedge BackFloor 进行更新
+	UpdateFrontLedgeWarpTarget(*MotionWarping, TraversalResult, TraversalSettings, *Character);
+
+	const bool bHasBackLedgeAnimatedDistance = UpdateBackLedgeWarpTarget(
+		*MotionWarping,
+		TraversalResult,
+		TraversalSettings,
+		*ChosenMontage,
+		AnimatedDistanceFromFrontLedgeToBackLedge);
+
+	UpdateBackFloorWarpTarget(
+		*MotionWarping,
+		TraversalResult,
+		TraversalSettings,
+		*ChosenMontage,
+		bHasBackLedgeAnimatedDistance,
+		AnimatedDistanceFromFrontLedgeToBackLedge);
+}
+
+void UGAFCharacterTraversalComponent::UpdateFrontLedgeWarpTarget(
+	UMotionWarpingComponent& MotionWarping,
+	const FGAFTraversalCheckResult& TraversalResult,
+	const FGAFTraversalSettings& TraversalSettings,
+	const ACharacter& Character) const
+{
+	// FrontLedge 是必需目标，位置轻微上抬，旋转用 -FrontLedgeNormal 作为 X 轴让角色面向边缘
+	const FVector FrontLedgeNormal = TraversalResult.FrontLedgeNormal.GetSafeNormal(
+		UE_SMALL_NUMBER,
+		Character.GetActorForwardVector());
 	const FVector FrontLedgeTargetLocation =
-		InOutTraversalResult.FrontLedgeLocation
+		TraversalResult.FrontLedgeLocation
 		+ FVector{ 0.0f, 0.0f, 0.5f };
 	const FRotator FrontLedgeTargetRotation =
 		FRotationMatrix::MakeFromX(-FrontLedgeNormal).Rotator();
 
-	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
+	MotionWarping.AddOrUpdateWarpTargetFromLocationAndRotation(
 		TraversalSettings.FrontLedgeWarpTargetName,
 		FrontLedgeTargetLocation,
 		FrontLedgeTargetRotation);
+}
 
-	// Step 2 : If the action type was a hurdle or a vault, we need to also update the BackLedge target. If it is not a hurdle or vault, remove it.
-	float AnimatedDistanceFromFrontLedgeToBackLedge{ 0.0f };
-	bool bShouldUseBackLedgeWarpTarget =
-		InOutTraversalResult.bHasBackLedge
-		&& (InOutTraversalResult.ActionType == EGAFTraversalActionType::Hurdle
-			|| InOutTraversalResult.ActionType == EGAFTraversalActionType::Vault);
+bool UGAFCharacterTraversalComponent::UpdateBackLedgeWarpTarget(
+	UMotionWarpingComponent& MotionWarping,
+	const FGAFTraversalCheckResult& TraversalResult,
+	const FGAFTraversalSettings& TraversalSettings,
+	const UAnimMontage& ChosenMontage,
+	float& OutAnimatedDistanceFromFrontLedgeToBackLedge) const
+{
+	const bool bShouldUpdateBackLedge =
+		TraversalResult.bHasBackLedge
+		&& (TraversalResult.ActionType == EGAFTraversalActionType::Hurdle
+			|| TraversalResult.ActionType == EGAFTraversalActionType::Vault);
 
-	if (bShouldUseBackLedgeWarpTarget)
+	if (!bShouldUpdateBackLedge)
 	{
-		TArray<FMotionWarpingWindowData> BackLedgeWarpWindows;
-		UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
-			ChosenMontage,
-			TraversalSettings.BackLedgeWarpTargetName,
-			BackLedgeWarpWindows);
-
-		bShouldUseBackLedgeWarpTarget = false;
-
-		// Step 3 : Because the traversal animations move at different distances (no fixed metrics), we need to know how far the animation moves 
-		// in order to warp it properly. Here we cache a curve value at the end of the Back Ledge warp window to 
-		// determine how far the animation is from the front ledge once the character reaches the back ledge location in the animation.
-		if (BackLedgeWarpWindows.IsEmpty())
-		{
-			InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::MissingBackLedgeWarpWindow;
-			UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: montage [%s] has no BackLedge warp window [%s]."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *TraversalSettings.BackLedgeWarpTargetName.ToString());
-			return false;
-		}
-
-		const float BackLedgeCurveSampleTime = BackLedgeWarpWindows[0].EndTime;
-		if (ChosenMontage->SlotAnimTracks.Num() > 0)
-		{
-			const FAnimTrack& AnimTrack = ChosenMontage->SlotAnimTracks[0].AnimTrack;
-			if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(BackLedgeCurveSampleTime))
-			{
-				const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
-				if (IsValid(AnimReference) && AnimReference->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
-				{
-					float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(BackLedgeCurveSampleTime);
-					AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
-
-					const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
-					AnimatedDistanceFromFrontLedgeToBackLedge =
-						AnimReference->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
-					bShouldUseBackLedgeWarpTarget = true;
-				}
-			}
-		}
-
-		if (!bShouldUseBackLedgeWarpTarget && ChosenMontage->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
-		{
-			const FAnimExtractContext CurveContext{ static_cast<double>(BackLedgeCurveSampleTime) };
-			AnimatedDistanceFromFrontLedgeToBackLedge =
-				ChosenMontage->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
-			bShouldUseBackLedgeWarpTarget = true;
-		}
-
-		if (!bShouldUseBackLedgeWarpTarget)
-		{
-			InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::MissingDistanceFromLedgeCurve;
-			UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: montage [%s] has no distance curve [%s] for BackLedge warp target."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *TraversalSettings.DistanceFromLedgeCurveName.ToString());
-			return false;
-		}
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
+		return false;
 	}
 
-	// Step 4 : Update the BackLedge warp target.
-	if (bShouldUseBackLedgeWarpTarget)
+	// 需要在动画里有 WarpWindows 才能进行 Warp
+	TArray<FMotionWarpingWindowData> BackLedgeWarpWindows;
+	UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
+		&ChosenMontage,
+		TraversalSettings.BackLedgeWarpTargetName,
+		BackLedgeWarpWindows);
+
+	if (BackLedgeWarpWindows.IsEmpty())
 	{
-		MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
-			TraversalSettings.BackLedgeWarpTargetName,
-			InOutTraversalResult.BackLedgeLocation,
-			FRotator::ZeroRotator);
-	}
-	else
-	{
-		MotionWarping->RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
-	}
-
-	// Step 5 : If the action type was a hurdle, we need to also update the BackFloor target. If it is not a hurdle, remove it.
-	float AnimatedDistanceFromFrontLedgeToBackFloor{ 0.0f };
-	bool bShouldUseBackFloorWarpTarget =
-		InOutTraversalResult.bHasBackFloor
-		&& InOutTraversalResult.ActionType == EGAFTraversalActionType::Hurdle;
-
-	if (bShouldUseBackFloorWarpTarget)
-	{
-		TArray<FMotionWarpingWindowData> BackFloorWarpWindows;
-		UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
-			ChosenMontage,
-			TraversalSettings.BackFloorWarpTargetName,
-			BackFloorWarpWindows);
-
-		bShouldUseBackFloorWarpTarget = false;
-
-		// Step 6 : Caches a curve value at the end of the Back Floor warp window to determine 
-		// how far the animation is from the front ledge once the character touches the ground.
-		if (BackFloorWarpWindows.IsEmpty())
-		{
-			InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::MissingBackFloorWarpWindow;
-			UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: montage [%s] has no BackFloor warp window [%s]."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *TraversalSettings.BackFloorWarpTargetName.ToString());
-			return false;
-		}
-
-		const float BackFloorCurveSampleTime = BackFloorWarpWindows[0].EndTime;
-		if (ChosenMontage->SlotAnimTracks.Num() > 0)
-		{
-			const FAnimTrack& AnimTrack = ChosenMontage->SlotAnimTracks[0].AnimTrack;
-			if (const FAnimSegment* Segment = AnimTrack.GetSegmentAtTime(BackFloorCurveSampleTime))
-			{
-				const UAnimSequenceBase* AnimReference = Segment->GetAnimReference();
-				if (IsValid(AnimReference) && AnimReference->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
-				{
-					float AnimationSampleTime = Segment->ConvertTrackPosToAnimPos(BackFloorCurveSampleTime);
-					AnimationSampleTime = FMath::Clamp(AnimationSampleTime, Segment->AnimStartTime, Segment->AnimEndTime);
-
-					const FAnimExtractContext CurveContext{ static_cast<double>(AnimationSampleTime) };
-					AnimatedDistanceFromFrontLedgeToBackFloor =
-						AnimReference->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
-					bShouldUseBackFloorWarpTarget = true;
-				}
-			}
-		}
-
-		if (!bShouldUseBackFloorWarpTarget && ChosenMontage->HasCurveData(TraversalSettings.DistanceFromLedgeCurveName))
-		{
-			const FAnimExtractContext CurveContext{ static_cast<double>(BackFloorCurveSampleTime) };
-			AnimatedDistanceFromFrontLedgeToBackFloor =
-				ChosenMontage->EvaluateCurveData(TraversalSettings.DistanceFromLedgeCurveName, CurveContext);
-			bShouldUseBackFloorWarpTarget = true;
-		}
-
-		if (!bShouldUseBackFloorWarpTarget)
-		{
-			InOutTraversalResult.FailureReason = EGAFTraversalFailureReason::MissingDistanceFromLedgeCurve;
-			UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to update warp targets: montage [%s] has no distance curve [%s] for BackFloor warp target."), *GetNameSafe(this), *GetNameSafe(ChosenMontage), *TraversalSettings.DistanceFromLedgeCurveName.ToString());
-			return false;
-		}
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
+		return false;
 	}
 
-	// Step 7 : Since the animations may land on the floor at different distances (a run hurdle may travel further than a walk or stand hurdle), 
-	// use the total animated distance away from the back ledge as the X and Y values of the BackFloor warp point. 
-	// This could technically cause some collision issues if the floor is not flat, or there is an bostacle in the way, 
-	// therefore having fixed metrics for all traversal animations would be an improvement.
-	if (bShouldUseBackFloorWarpTarget)
+	// 因为不同的 Traversal 动画会移动不同的距离，所以需要知道动画实际移动了多远
+	// 这样才能正确地对它进行 Motion Warping。这里会在 Back Ledge Warp Window 的结束时刻缓存一个曲线值
+	// 用来判断当角色在动画中到达 Back Ledge 位置时，动画距离 Front Ledge 有多远
+	const float BackLedgeCurveSampleTime = BackLedgeWarpWindows[0].EndTime;
+	const bool bHasCurveData = TryEvaluateMontageCurveAtTime(
+		ChosenMontage,
+		TraversalSettings.DistanceFromLedgeCurveName,
+		BackLedgeCurveSampleTime,
+		OutAnimatedDistanceFromFrontLedgeToBackLedge);
+	
+	if (!bHasCurveData)
 	{
-		const float BackFloorHorizontalOffset =
-			FMath::Abs(AnimatedDistanceFromFrontLedgeToBackLedge - AnimatedDistanceFromFrontLedgeToBackFloor);
-		const FVector BackFloorHorizontalLocation =
-			InOutTraversalResult.BackLedgeLocation
-			+ InOutTraversalResult.BackLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector)
-			* BackFloorHorizontalOffset;
-		const FVector BackFloorTargetLocation{
-			BackFloorHorizontalLocation.X,
-			BackFloorHorizontalLocation.Y,
-			InOutTraversalResult.BackFloorLocation.Z
-		};
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackLedgeWarpTargetName);
+		return false;
+	}
 
-		MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(
-			TraversalSettings.BackFloorWarpTargetName,
-			BackFloorTargetLocation,
-			FRotator::ZeroRotator);
-	}
-	else
-	{
-		MotionWarping->RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
-	}
+	MotionWarping.AddOrUpdateWarpTargetFromLocationAndRotation(
+		TraversalSettings.BackLedgeWarpTargetName,
+		TraversalResult.BackLedgeLocation,
+		FRotator::ZeroRotator);
 
 	return true;
+}
+
+void UGAFCharacterTraversalComponent::UpdateBackFloorWarpTarget(
+	UMotionWarpingComponent& MotionWarping,
+	const FGAFTraversalCheckResult& TraversalResult,
+	const FGAFTraversalSettings& TraversalSettings,
+	const UAnimMontage& ChosenMontage,
+	bool bHasAnimatedDistanceFromFrontLedgeToBackLedge,
+	float AnimatedDistanceFromFrontLedgeToBackLedge) const
+{
+	const bool bShouldUpdateBackFloor =
+		TraversalResult.ActionType == EGAFTraversalActionType::Hurdle
+		&& TraversalResult.bHasBackFloor
+		&& TraversalResult.bHasBackLedge
+		&& bHasAnimatedDistanceFromFrontLedgeToBackLedge;
+
+	if (!bShouldUpdateBackFloor)
+	{
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
+		return;
+	}
+
+	TArray<FMotionWarpingWindowData> BackFloorWarpWindows;
+	UMotionWarpingUtilities::GetMotionWarpingWindowsForWarpTargetFromAnimation(
+		&ChosenMontage,
+		TraversalSettings.BackFloorWarpTargetName,
+		BackFloorWarpWindows);
+
+	if (BackFloorWarpWindows.IsEmpty())
+	{
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
+		return;
+	}
+
+	// BackFloor Warp Window 结束时的距离曲线表示动画接触地面时距离 FrontLedge 有多远
+	float AnimatedDistanceFromFrontLedgeToBackFloor{ 0.0f };
+	const float BackFloorCurveSampleTime = BackFloorWarpWindows[0].EndTime;
+	bool bHasCurveData = TryEvaluateMontageCurveAtTime(
+		ChosenMontage,
+		TraversalSettings.DistanceFromLedgeCurveName,
+		BackFloorCurveSampleTime,
+		AnimatedDistanceFromFrontLedgeToBackFloor);
+	
+	if (!bHasCurveData)
+	{
+		MotionWarping.RemoveWarpTarget(TraversalSettings.BackFloorWarpTargetName);
+		return;
+	}
+
+	// 由于不同动画可能会在距离不同的位置落到地面上(例如跑步跨越可能比走路或站立跨越移动得更远)
+	// 因此这里使用动画中相对 Back Ledge 的总移动距离，作为 BackFloor warp point 的 X/Y 平面位置
+	// 从技术上说，如果地面不是平的，或者路径中间有障碍物，这种做法可能会导致一些碰撞问题
+	// TODO:如果所有 Traversal 动画都能使用固定的度量标准，会是一个更好的改进方向
+	const float BackFloorHorizontalOffset =
+		FMath::Abs(AnimatedDistanceFromFrontLedgeToBackLedge - AnimatedDistanceFromFrontLedgeToBackFloor);
+	const FVector BackFloorHorizontalLocation =
+		TraversalResult.BackLedgeLocation
+		+ TraversalResult.BackLedgeNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector)
+		* BackFloorHorizontalOffset;
+	const FVector BackFloorTargetLocation{
+		BackFloorHorizontalLocation.X,
+		BackFloorHorizontalLocation.Y,
+		TraversalResult.BackFloorLocation.Z
+	};
+
+	MotionWarping.AddOrUpdateWarpTargetFromLocationAndRotation(
+		TraversalSettings.BackFloorWarpTargetName,
+		BackFloorTargetLocation,
+		FRotator::ZeroRotator);
 }
 
 void UGAFCharacterTraversalComponent::DebugPrintTraversalFailureReason(
@@ -905,15 +967,11 @@ void UGAFCharacterTraversalComponent::DebugPrintTraversalFailureReason(
 		return;
 	}
 
-	const UEnum* FailureReasonEnum = StaticEnum<EGAFTraversalFailureReason>();
-	const FString FailureReasonString = IsValid(FailureReasonEnum)
-		? FailureReasonEnum->GetNameStringByValue(static_cast<int64>(TraversalCheckResult.FailureReason))
-		: TEXT("Unknown");
-
+	// 将 FailureReason 从枚举转为文本
 	const FString DebugString = FString::Printf(
 		TEXT("%s failed to Traverse. FailureReason: %s."),
 		*GetNameSafe(GetOwner()),
-		*FailureReasonString);
+		LexToString(TraversalCheckResult.FailureReason));
 
 	UKismetSystemLibrary::PrintString(
 		this,

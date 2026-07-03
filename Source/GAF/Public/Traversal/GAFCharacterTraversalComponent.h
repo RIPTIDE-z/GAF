@@ -11,6 +11,7 @@
 #include "GAFCharacterTraversalComponent.generated.h"
 
 class ACharacter;
+class UMotionWarpingComponent;
 
 UCLASS(ClassGroup = (GAF), meta = (BlueprintSpawnableComponent))
 class GAF_API UGAFCharacterTraversalComponent : public UActorComponent
@@ -32,14 +33,16 @@ public:
 		EDrawDebugTrace::Type TraversalDebugType,
 		FGAFTraversalCheckResult& InOutTraversalCheckResult);
 	
+	// 真正执行 Traversal
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
 	bool PerformTraversalAction(
 		FGAFTraversalCheckResult& InOutTraversalResult,
 		const FGAFTraversalSettings& TraversalSettings);
 	
+	// 更新用于 MotionWarping 组件的 Warptargets
 	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
-	bool UpdateWarpTargets(
-		FGAFTraversalCheckResult& InOutTraversalResult,
+	void UpdateWarpTargets(
+		const FGAFTraversalCheckResult& TraversalResult,
 		const FGAFTraversalSettings& TraversalSettings);
 
 	// 打印 Traversal 检测失败原因
@@ -55,11 +58,32 @@ public:
 protected:
 	ACharacter* GetOwnerCharacter() const;
 
+	// Montage 委托绑定
 	void HandleTraversalMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
-
 	void HandleTraversalMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void FinishTraversalAction();
+
+	void UpdateFrontLedgeWarpTarget(
+		UMotionWarpingComponent& MotionWarping,
+		const FGAFTraversalCheckResult& TraversalResult,
+		const FGAFTraversalSettings& TraversalSettings,
+		const ACharacter& Character) const;
+
+	bool UpdateBackLedgeWarpTarget(
+		UMotionWarpingComponent& MotionWarping,
+		const FGAFTraversalCheckResult& TraversalResult,
+		const FGAFTraversalSettings& TraversalSettings,
+		const UAnimMontage& ChosenMontage,
+		float& OutAnimatedDistanceFromFrontLedgeToBackLedge) const;
+
+	void UpdateBackFloorWarpTarget(
+		UMotionWarpingComponent& MotionWarping,
+		const FGAFTraversalCheckResult& TraversalResult,
+		const FGAFTraversalSettings& TraversalSettings,
+		const UAnimMontage& ChosenMontage,
+		bool bHasAnimatedDistanceFromFrontLedgeToBackLedge,
+		float AnimatedDistanceFromFrontLedgeToBackLedge) const;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bDoingTraversalAction{ false };
@@ -68,6 +92,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Transient)
 	FGAFTraversalFrameData CachedTraversalData;
 
+	// 保存 CheckResult 以供蒙太奇回调使用
 	UPROPERTY(BlueprintReadOnly, Transient)
 	FGAFTraversalCheckResult ActiveTraversalResult;
 };
