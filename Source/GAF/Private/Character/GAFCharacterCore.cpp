@@ -93,8 +93,60 @@ void AGAFCharacterCore::ToggleInputStateTag(FGameplayTag Tag)
 	}
 }
 
+// 向 AnimationInstance 传递动画更新所需数据
 bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) const
 {
+	const UCharacterMovementComponent* CMC = GetCharacterMovement();
+	if (!IsValid(CMC))
+	{
+		UE_LOG(LogGAFTraversal, Warning, TEXT("Get Animation Frame Data failed, CMC is invalid on [%s]."), *GetNameSafe(this));
+		return false;
+	}
+	
+	OutData.InputStateTags = InputStateTags;
+	switch (CMC->MovementMode)
+	{
+		case MOVE_Falling:
+		case MOVE_Swimming:
+			OutData.MovementMode = GAFGamePlayTags::MovementMode_InAir;
+
+		default:
+			OutData.MovementMode = GAFGamePlayTags::MovementMode_OnGround;
+	}
+	
+	OutData.Stance = CMC->IsCrouching()
+		? GAFGamePlayTags::Stance_Crouch
+		: GAFGamePlayTags::Stance_Stand;
+
+	OutData.RotationMode = CMC->bOrientRotationToMovement
+		? GAFGamePlayTags::RotationMode_OrientToMovement
+		: GAFGamePlayTags::RotationMode_Strafe;
+	
+	// TODO:这里是重新计算了一次
+	OutData.Gait = CalculateMaxAllowedGait();
+	
+	OutData.ActorTransform = GetActorTransform();
+	
+	OutData.Velocity = CMC->Velocity;
+	
+	OutData.InputAcceleration = CMC->GetCurrentAcceleration();
+	
+	OutData.CurrentMaxAcceleration = CMC->GetMaxAcceleration();
+	
+	OutData.CurrentMaxDeceleration = CMC->BrakingDecelerationWalking;
+	
+	OutData.OrientationIntent = GetActorRotation();
+	
+	// 本地控制角色直接用 Controller 当前旋转
+	// 非本地角色用引擎同步出来的 Aim Rotation
+	OutData.AimingRotation = IsLocallyControlled()
+		? GetControlRotation()
+		: GetBaseAimRotation();
+	
+	// TODO:Land
+	
+	OutData.GroundNormal = CMC->CurrentFloor.HitResult.ImpactNormal;
+	
 	return false;
 }
 
@@ -304,7 +356,7 @@ bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
 	OutData.MaxWalkSpeed = CalculateDirectionDependentSpeed(*GaitSpeeds, DirectionAmount);
 
 	// 2.6 Max Walk Speed Crouched
-	// 蹲伏复用同一套方向映射逻辑，只是速度组换成 CrouchSpeeds。
+	// 蹲伏复用同一套方向映射逻辑，只是速度组换成 CrouchSpeeds
 	OutData.MaxWalkSpeedCrouched = CalculateDirectionDependentSpeed(MovementSettings.CrouchSpeeds, DirectionAmount);
 
 	return true;

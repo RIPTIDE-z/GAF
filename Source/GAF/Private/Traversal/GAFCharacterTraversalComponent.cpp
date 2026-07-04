@@ -704,7 +704,6 @@ void UGAFCharacterTraversalComponent::HandleTraversalMontageEnded(UAnimMontage* 
 	(void)bInterrupted;
 
 	// Ended 对应蓝图 Play Montage 的 On Completed / On Interrupted 分支
-	// FinishTraversalAction 内部是幂等的，因此和 BlendOut 同时触发也不会重复恢复
 	FinishTraversalAction();
 }
 
@@ -827,6 +826,7 @@ bool UGAFCharacterTraversalComponent::UpdateBackLedgeWarpTarget(
 	const UAnimMontage& ChosenMontage,
 	float& OutAnimatedDistanceFromFrontLedgeToBackLedge) const
 {
+	// 如果动作类型是 Hurdle 或者 Vault 则需要更新 BackLedge
 	const bool bShouldUpdateBackLedge =
 		TraversalResult.bHasBackLedge
 		&& (TraversalResult.ActionType == EGAFTraversalActionType::Hurdle
@@ -883,6 +883,7 @@ void UGAFCharacterTraversalComponent::UpdateBackFloorWarpTarget(
 	bool bHasAnimatedDistanceFromFrontLedgeToBackLedge,
 	float AnimatedDistanceFromFrontLedgeToBackLedge) const
 {
+	// 如果动作类型是 Hurdle 则需要更新 BackFloor
 	const bool bShouldUpdateBackFloor =
 		TraversalResult.ActionType == EGAFTraversalActionType::Hurdle
 		&& TraversalResult.bHasBackFloor

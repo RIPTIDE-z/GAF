@@ -59,6 +59,7 @@ protected:
 	ACharacter* GetOwnerCharacter() const;
 
 	// Montage 委托绑定
+	// 参数需要与委托签名一致
 	void HandleTraversalMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
 	void HandleTraversalMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 

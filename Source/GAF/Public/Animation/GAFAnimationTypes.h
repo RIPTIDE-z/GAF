@@ -28,13 +28,13 @@ struct GAF_API FGAFAnimationFrameData
 	FGameplayTag Gait;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FTransform ActorTransform{ FTransform::Identity };
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity{ ForceInit };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector InputAcceleration;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FTransform ActorTransform{ FTransform::Identity };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float CurrentMaxAcceleration{ 0.0f };
@@ -43,19 +43,19 @@ struct GAF_API FGAFAnimationFrameData
 	float CurrentMaxDeceleration{ 0.0f };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FRotator OrientationIntent;
+	FRotator OrientationIntent{0.0f, 0.0f, 0.0f};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FRotator AimingRotation;
+	FRotator AimingRotation{0.0f, 0.0f, 0.0f};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool JustLanded;
+	bool JustLanded{false};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector LandVelocity;
+	FVector LandVelocity{ForceInit};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector GroundNormal;
+	FVector GroundNormal{ForceInit};
 };
 
 // TODO: 摄像机
