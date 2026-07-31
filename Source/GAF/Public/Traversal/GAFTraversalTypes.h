@@ -57,27 +57,27 @@ struct GAF_API FGAFTraversalCheckInputs
 	GENERATED_BODY()
 
 	// 障碍物检测的向前方向
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector TraceForwardDirection{ ForceInit };
 
 	// Trace距离
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float TraceForwardDistance{ 0.0f };
 
 	// 起点的偏移值
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector TraceOriginOffset{ ForceInit };
 
 	// 重点偏移值
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector TraceEndOffset{ ForceInit };
 
 	// 用于Trace的胶囊体的半径
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float TraceCapsuleRadius{ 0.0f };
 
 	// 用于Trace的胶囊体的半高度
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float TraceCapsuleHalfHeight{ 0.0f };
 };
 
@@ -93,69 +93,69 @@ struct GAF_API FGAFTraversalCheckResult
 	}
 
 	// 翻越动作类型
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	EGAFTraversalActionType ActionType{ EGAFTraversalActionType::None };
 
 	// 是否有前边缘
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bHasFrontLedge{ false };
 
 	// 前边缘位置
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector FrontLedgeLocation{ ForceInit };
 
 	// 前边缘法线方向
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector FrontLedgeNormal{ ForceInit };
 
 	// 是否有后边缘
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bHasBackLedge{ false };
 
 	// 后边缘位置
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector BackLedgeLocation{ ForceInit };
 
 	// 后边缘法线方向
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector BackLedgeNormal{ ForceInit };
 
 	// 后边缘后是否有可落地地面
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bHasBackFloor{ false };
 
 	// 可落地地面位置
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	FVector BackFloorLocation{ ForceInit };
 
 	// 翻越物高度
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float ObstacleHeight{ 0.0f };
 
 	// 翻越物跨度(顶部长度)
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float ObstacleDepth{ 0.0f };
 
 	// 后边缘高度
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float BackLedgeHeight{ 0.0f };
 
 	// Trace碰撞到的组件
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	TObjectPtr<UPrimitiveComponent> HitComponent{ nullptr };
 
 	// 选中的蒙太奇
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	TObjectPtr<UAnimMontage> ChosenMontage{ nullptr };
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float StartTime{ 0.0f };
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	float PlayRate{ 1.0f };
 
 	// Traversal 失败原因
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	EGAFTraversalFailureReason FailureReason{ EGAFTraversalFailureReason::None };
 };
 
@@ -165,40 +165,40 @@ struct GAF_API FGAFTraversalChooserInputs
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	EGAFTraversalActionType ActionType{ EGAFTraversalActionType::None };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	bool bHasFrontLedge{ false };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	bool bHasBackLedge{ false };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	bool bHasBackFloor{ false };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float ObstacleHeight{ 0.0f };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float ObstacleDepth{ 0.0f };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float BackLedgeHeight{ 0.0f };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float DistanceToLedge{ 0.0f };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	FGameplayTag MovementMode;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	FGameplayTag Gait;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float Speed{ 0.0f };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	FPoseHistoryReference PoseHistory;
 };
 
@@ -208,12 +208,12 @@ struct GAF_API FGAFTraversalChooserOutputs
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	EGAFTraversalActionType ActionType{ EGAFTraversalActionType::None };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	TObjectPtr<UAnimMontage> ChosenMontage{ nullptr };
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "GAF|Traversal")
 	float MontageStartTime{ 0.0f };
 };

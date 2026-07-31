@@ -86,14 +86,14 @@ protected:
 		bool bHasAnimatedDistanceFromFrontLedgeToBackLedge,
 		float AnimatedDistanceFromFrontLedgeToBackLedge) const;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Traversal")
 	bool bDoingTraversalAction{ false };
 
 	// 缓存的用于翻越系统的数据
-	UPROPERTY(BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Traversal")
 	FGAFTraversalFrameData CachedTraversalData;
 
 	// 保存 CheckResult 以供蒙太奇回调使用
-	UPROPERTY(BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Traversal")
 	FGAFTraversalCheckResult ActiveTraversalResult;
 };

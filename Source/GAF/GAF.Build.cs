@@ -16,8 +16,7 @@ public class GAF : ModuleRules
 				"AnimGraphRuntime",
 				"MotionWarping",
 				"Chooser",
-				"PoseSearch",
-				"StructUtils"
+				"PoseSearch"
 			}
 		);
 

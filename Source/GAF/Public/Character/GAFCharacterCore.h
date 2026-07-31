@@ -48,16 +48,16 @@ public:
 	virtual bool GetLocomotionData(FGAFLocomotionData& OutData) const override;
 
 	// 根据传入的bActive修改输入Tag
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "GAF|Input")
 	void SetInputStateTag(FGameplayTag Tag, bool bActive);
 
 	// 切换输入Tag
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "GAF|Input")
 	void ToggleInputStateTag(FGameplayTag Tag);
 
 	bool HasInputStateTag(FGameplayTag Tag) const;
 
-	// 计算当前输入状态下允许的最“大”Gait
+	// 计算当前输入状态下允许的最"大"Gait
 	FGameplayTag CalculateMaxAllowedGait() const;
 
 protected:
@@ -75,14 +75,14 @@ protected:
 
 protected:
 	// 带有自定义逻辑的 CMC
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Character")
 	TObjectPtr<UGAFCharacterMovementComponent> GAFCharacterMovement;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Character")
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent;
 
 	// 翻越逻辑组件，对应AC_TraversalLogic
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAF|Character")
 	TObjectPtr<UGAFCharacterTraversalComponent> CharacterTraversalComponent;
 
 protected:
@@ -91,13 +91,13 @@ protected:
 	FGameplayTagContainer InputStateTags;
 
 	// 摇杆推动幅度，0 ~ 1，1 表示满输入
-	UPROPERTY(BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Input")
 	float MoveInputLength{ ForceInit };
 
-	UPROPERTY(BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Input")
 	float MoveWorldSpaceInputLength{ ForceInit };
 
 	// 允许 Sprint 时移动方向和角色朝向的夹角阈值
-	UPROPERTY(BlueprintReadOnly, Transient)
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Input")
 	float SprintAngleThreshold{ 50.0f };
 };

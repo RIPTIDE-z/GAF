@@ -15,12 +15,12 @@ class GAF_API UGAFCharacterSettings : public UDataAsset
 public:
 	UGAFCharacterSettings(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAF|Movement", Meta = (ShowOnlyInnerProperties))
 	FGAFMovementSettings MovementSettings;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAF|Traversal", Meta = (ShowOnlyInnerProperties))
 	FGAFTraversalSettings TraversalSettings;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ShowOnlyInnerProperties))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAF|MotionMatching", Meta = (ShowOnlyInnerProperties))
 	FGAFMotionMatchingSettings MotionMatchingSettings;
 };

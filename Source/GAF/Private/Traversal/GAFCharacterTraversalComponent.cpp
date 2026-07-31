@@ -4,6 +4,7 @@
 #include "AnimInstance/GAFAnimInstanceDataProvider.h"
 #include "Traversal/GAFTraversalCollisionResolver.h"
 #include "Traversal/GAFTraversableLedgeProviderComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationTypes.h"
