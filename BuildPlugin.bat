@@ -3,9 +3,9 @@ setlocal EnableExtensions
 
 title Build GAF Plugin
 
-set "SourceBuildVersion=5.7"
-set "InstalledBuildVersion=5.7"
-set "DefaultEngineDirectory=E:\epic\UE_5.7"
+set "SourceBuildVersion=5.8"
+set "InstalledBuildVersion=5.8"
+set "DefaultEngineDirectory=E:\epic\UE_5.8"
 
 set "ScriptDirectory=%~dp0"
 set "PluginPath=%ScriptDirectory%GameAnimationFramework.uplugin"
