@@ -160,9 +160,8 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// 这里不直接依赖具体 Character 子类，而是通过 IGAFCharacterDataProvider 读取 Mesh、MovementMode、Gait、Speed 等数据
 	CachedTraversalData = FGAFTraversalFrameData{};
 
-	IGAFCharacterDataProvider* Provider =
-		Cast<IGAFCharacterDataProvider>(Character);
-	const bool bHasData = Provider && Provider->GetTraversalFrameData(CachedTraversalData);
+	// BlueprintNativeEvent interface functions must be called via Execute_
+	const bool bHasData = IGAFCharacterDataProvider::Execute_GetTraversalFrameData(Character, CachedTraversalData);
 
 	// 数据无效
 	// TODO:考虑使用上一帧数据而不是直接用默认值
@@ -478,7 +477,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 		FVector::OneVector
 	};
 
-	AnimProvider->SetTraversalInteractionTransform(InteractionTransform);
+	IGAFAnimInstanceDataProvider::Execute_SetTraversalInteractionTransform(AnimInstance, InteractionTransform);
 
 	// Step 4.2 : 评估 Traversal Chooser，选择最合适的 Montage 和起始时间
 	// Chooser 会使用一列专门的 PoseMatch Column 进行一次临时 MotionMatch
@@ -494,7 +493,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	}
 
 	FPoseHistoryReference PoseHistory;
-	if (!AnimProvider->GetTraversalPoseHistoryReference(MotionMatchingSettings.TraversalPoseHistoryTag, PoseHistory))
+	if (!IGAFAnimInstanceDataProvider::Execute_GetTraversalPoseHistoryReference(AnimInstance, MotionMatchingSettings.TraversalPoseHistoryTag, PoseHistory))
 	{
 		InOutTraversalCheckResult.FailureReason = EGAFTraversalFailureReason::InvalidPoseHistory;
 		UE_LOG(LogGAFTraversal, Warning, TEXT("%s failed to try traversal action: pose history [%s] is invalid on [%s]."), *GetNameSafe(this), *MotionMatchingSettings.TraversalPoseHistoryTag.ToString(), *GetNameSafe(Character));

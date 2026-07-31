@@ -40,11 +40,8 @@ void UGAFCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float De
 {
 	CachedLocomotionData = FGAFLocomotionData{};
 
-	IGAFLocomotionDataProvider* Provider =
-		Cast<IGAFLocomotionDataProvider>(CharacterOwner);
-
-	// 调用接口函数获取数据并存入缓存
-	const bool bHasData = Provider && Provider->GetLocomotionData(CachedLocomotionData);
+	// BlueprintNativeEvent 接口函数必须通过 Execute_ 静态函数调用，不能直接调用接口成员函数
+	const bool bHasData = IGAFLocomotionDataProvider::Execute_GetLocomotionData(CharacterOwner, CachedLocomotionData);
 
 	// 数据无效
 	// TODO:考虑使用上一帧数据而不是直接用默认值

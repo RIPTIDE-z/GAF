@@ -108,7 +108,8 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Canceled, this, &ThisClass::Input_OnJumpReleased, false);
 
 	// 相机切换输入 — ChangeCameraSide 任意触发即翻转，ChangeCameraDistance 用 Triggered 接收滚轮 delta
-	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeCameraSide, ETriggerEvent::Triggered, this, &ThisClass::Input_ChangeCameraSide, false);
+	// 使用 Started 而非 Triggered，确保按下时只触发一次翻转，按住不会反复翻转
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeCameraSide, ETriggerEvent::Started, this, &ThisClass::Input_ChangeCameraSide, false);
 
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeCameraDistance, ETriggerEvent::Triggered, this, &ThisClass::Input_ChangeCameraDistance, false);
 }
@@ -385,9 +386,9 @@ void AGAFCharacterPlayable::Input_ChangeCameraSide(const FInputActionValue& Acti
 }
 
 // 鼠标滚轮切换相机视角风格
-// 滚轮 delta 累积到 CameraStyleIndex 后循环映射:
+// 滚轮 delta 累积到 CameraStyleIndex 后只做单向增减，到达边界后不再继续
 //   0 -> Aim, 1 -> Explore, 2 -> Combat
-// 正值(上滚)减小 index，负值(下滚)增加 index，超出范围时回绕
+// 正值(上滚)减小 index，负值(下滚)增加 index，Clamp 在 0~2 之间
 void AGAFCharacterPlayable::Input_ChangeCameraDistance(const FInputActionValue& ActionValue)
 {
 	const float WheelDelta = ActionValue.Get<float>();
@@ -396,9 +397,9 @@ void AGAFCharacterPlayable::Input_ChangeCameraDistance(const FInputActionValue& 
 	const int32 Direction = FMath::Sign(WheelDelta);
 	CameraStyleIndex -= Direction;
 
-	// 循环回绕: -1 -> 2, 3 -> 0
+	// 单向增减，到达边界停止，不回绕
 	constexpr int32 StyleCount = 3;
-	CameraStyleIndex = ((CameraStyleIndex % StyleCount) + StyleCount) % StyleCount;
+	CameraStyleIndex = FMath::Clamp(CameraStyleIndex, 0, StyleCount - 1);
 
 	// index -> CameraStyle 映射
 	static const EGAFCameraStyle StyleMap[StyleCount] = {
