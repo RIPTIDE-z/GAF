@@ -7,15 +7,16 @@
 #include "GAFAnimationTypes.generated.h"
 
 // 相机视角风格 — 瞄准 / 探索 / 战斗
+// UMETA DisplayName 让 Chooser 和蓝图中显示中文标签而非原始 C++ 枚举名
 UENUM(BlueprintType)
 enum class EGAFCameraStyle : uint8
 {
 	// 默认探索视角
-	Explore,
+	Explore UMETA(DisplayName = "Explore"),
 	// 瞄准视角
-	Aim,
+	Aim UMETA(DisplayName = "Aim"),
 	// 战斗视角
-	Combat
+	Combat UMETA(DisplayName = "Combat")
 };
 
 // 相机左右偏好侧
@@ -23,9 +24,9 @@ UENUM(BlueprintType)
 enum class EGAFCameraSide : uint8
 {
 	// 右侧
-	Right,
+	Right UMETA(DisplayName = "Right"),
 	// 左侧
-	Left
+	Left UMETA(DisplayName = "Left")
 };
 
 USTRUCT(BlueprintType)

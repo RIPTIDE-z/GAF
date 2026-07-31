@@ -5,7 +5,9 @@
 
 #include "GAFAnimInstanceDataProvider.generated.h"
 
-UINTERFACE(MinimalAPI, meta = (CannotImplementInterfaceInBlueprint))
+// AnimInstance 数据提供者接口，负责写入 Traversal 交互目标和获取 PoseHistory
+// BlueprintType + 去掉 CannotImplementInterfaceInBlueprint 使蓝图 AnimInstance 子类可以覆写
+UINTERFACE(BlueprintType)
 class UGAFAnimInstanceDataProvider : public UInterface
 {
 	GENERATED_BODY()
@@ -16,7 +18,11 @@ class GAF_API IGAFAnimInstanceDataProvider
 	GENERATED_BODY()
 
 public:
-	virtual void SetTraversalInteractionTransform(const FTransform& InInteractionTransform) = 0;
+	// 写入 Traversal 交互目标 Transform，Motion Matching 自定义 Channel 使用
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Traversal")
+	void SetTraversalInteractionTransform(const FTransform& InInteractionTransform);
 
-	virtual bool GetTraversalPoseHistoryReference(FName PoseHistoryTag, FPoseHistoryReference& OutPoseHistory) const = 0;
+	// 通过 AnimGraph 节点 Tag 查找 PoseHistory 引用，供 Chooser 评估使用
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Traversal")
+	bool GetTraversalPoseHistoryReference(FName PoseHistoryTag, FPoseHistoryReference& OutPoseHistory);
 };

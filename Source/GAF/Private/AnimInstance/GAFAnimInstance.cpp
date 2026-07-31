@@ -6,15 +6,15 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GAFAnimInstance)
 
-void UGAFAnimationInstance::SetTraversalInteractionTransform(const FTransform& InInteractionTransform)
+void UGAFAnimationInstance::SetTraversalInteractionTransform_Implementation(const FTransform& InInteractionTransform)
 {
 	TraversalInteractionTransform = InInteractionTransform;
 }
 
 // 传入 Tag 找到 PoseHistory 节点并获取 PoseHistory
-bool UGAFAnimationInstance::GetTraversalPoseHistoryReference(
+bool UGAFAnimationInstance::GetTraversalPoseHistoryReference_Implementation(
 	const FName PoseHistoryTag,
-	FPoseHistoryReference& OutPoseHistory) const
+	FPoseHistoryReference& OutPoseHistory)
 {
 	OutPoseHistory = FPoseHistoryReference{};
 

@@ -39,13 +39,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
-	// 获取动画所需数据的接口
-	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const override;
-	virtual bool GetCameraFrameData(FGAFCameraFrameData& OutData) const override;
-	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const override;
+	// ---- IGAFCharacterDataProvider 的 C++ 默认实现 ----
+	// 蓝图子类可覆写这些 _Implementation 函数改变数据组装逻辑
+	virtual bool GetAnimationFrameData_Implementation(FGAFAnimationFrameData& OutData) override;
+	virtual bool GetCameraFrameData_Implementation(FGAFCameraFrameData& OutData) override;
+	virtual bool GetTraversalFrameData_Implementation(FGAFTraversalFrameData& OutData) override;
 
-	// CMC数据传递
-	virtual bool GetLocomotionData(FGAFLocomotionData& OutData) const override;
+	// ---- IGAFLocomotionDataProvider 的 C++ 默认实现 ----
+	virtual bool GetLocomotionData_Implementation(FGAFLocomotionData& OutData) override;
 
 	// 根据传入的bActive修改输入Tag
 	UFUNCTION(BlueprintCallable, Category = "GAF|Input")

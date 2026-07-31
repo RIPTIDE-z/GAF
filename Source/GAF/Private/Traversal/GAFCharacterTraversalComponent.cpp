@@ -160,7 +160,7 @@ bool UGAFCharacterTraversalComponent::TryTraversalAction(
 	// 这里不直接依赖具体 Character 子类，而是通过 IGAFCharacterDataProvider 读取 Mesh、MovementMode、Gait、Speed 等数据
 	CachedTraversalData = FGAFTraversalFrameData{};
 
-	const IGAFCharacterDataProvider* Provider =
+	IGAFCharacterDataProvider* Provider =
 		Cast<IGAFCharacterDataProvider>(Character);
 	const bool bHasData = Provider && Provider->GetTraversalFrameData(CachedTraversalData);
 

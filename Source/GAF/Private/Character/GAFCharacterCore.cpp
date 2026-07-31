@@ -94,7 +94,7 @@ void AGAFCharacterCore::ToggleInputStateTag(FGameplayTag Tag)
 }
 
 // 向 AnimationInstance 传递动画更新所需数据
-bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) const
+bool AGAFCharacterCore::GetAnimationFrameData_Implementation(FGAFAnimationFrameData& OutData)
 {
 	const UCharacterMovementComponent* CMC = GetCharacterMovement();
 	if (!IsValid(CMC))
@@ -152,14 +152,14 @@ bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) c
 	return true;
 }
 
-bool AGAFCharacterCore::GetCameraFrameData(FGAFCameraFrameData& OutData) const
+bool AGAFCharacterCore::GetCameraFrameData_Implementation(FGAFCameraFrameData& OutData)
 {
 	OutData.CameraStyle = CurrentCameraStyle;
 	OutData.CameraSide = CurrentCameraSide;
 	return true;
 }
 
-bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) const
+bool AGAFCharacterCore::GetTraversalFrameData_Implementation(FGAFTraversalFrameData& OutData)
 {
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (!IsValid(Capsule))
@@ -214,7 +214,7 @@ bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) c
 	return true;
 }
 
-bool AGAFCharacterCore::GetLocomotionData(FGAFLocomotionData& OutData) const
+bool AGAFCharacterCore::GetLocomotionData_Implementation(FGAFLocomotionData& OutData)
 {
 	const UGAFCharacterSettings& CharacterSetting = GetDefaultCharacterSettings();
 	const FGAFMovementSettings& MovementSettings = CharacterSetting.MovementSettings;

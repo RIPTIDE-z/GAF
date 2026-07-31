@@ -3,7 +3,10 @@
 #include "GAFAnimationTypes.h"
 #include "GAFCharacterDataProvider.generated.h"
 
-UINTERFACE(MinimalAPI, meta = (CannotImplementInterfaceInBlueprint))
+// 角色数据提供者接口
+// BlueprintType 允许蓝图识别该接口类型
+// 去掉 CannotImplementInterfaceInBlueprint 使蓝图类可以继承并覆写接口函数
+UINTERFACE(BlueprintType)
 class UGAFCharacterDataProvider : public UInterface
 {
 	GENERATED_BODY()
@@ -14,15 +17,25 @@ class GAF_API IGAFCharacterDataProvider
 	GENERATED_BODY()
 
 public:
-	// 动画蓝图数据获取接口
-	virtual bool GetAnimationFrameData(FGAFAnimationFrameData& OutData) const = 0;
-	// 摄像机参数获取接口
-	virtual bool GetCameraFrameData(FGAFCameraFrameData& OutData) const = 0;
-	// 翻越系统数据获取接口
-	virtual bool GetTraversalFrameData(FGAFTraversalFrameData& OutData) const = 0;
+	// 获取当前帧动画所需数据
+	// BlueprintNativeEvent 允许蓝图子类覆写；BlueprintCallable 允许蓝图侧调用
+	// C++ 默认实现名为 GetAnimationFrameData_Implementation
+	// 注意 BlueprintNativeEvent 不能是 const 成员函数
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Animation")
+	bool GetAnimationFrameData(FGAFAnimationFrameData& OutData);
+
+	// 获取当前帧相机参数
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Camera")
+	bool GetCameraFrameData(FGAFCameraFrameData& OutData);
+
+	// 获取当前帧翻越系统所需角色数据
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Traversal")
+	bool GetTraversalFrameData(FGAFTraversalFrameData& OutData);
 };
 
-UINTERFACE(MinimalAPI, meta = (CannotImplementInterfaceInBlueprint))
+// 移动数据提供者接口
+// CMC 通过该接口读取每帧移动参数，不直接依赖具体 Character 子类
+UINTERFACE(BlueprintType)
 class UGAFLocomotionDataProvider : public UInterface
 {
 	GENERATED_BODY()
@@ -33,6 +46,7 @@ class GAF_API IGAFLocomotionDataProvider
 	GENERATED_BODY()
 
 public:
-	// CMC数据获取接口
-	virtual bool GetLocomotionData(FGAFLocomotionData& OutData) const = 0;
+	// 获取当前帧移动所需的速度、加速度、旋转模式等参数
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GAF|Movement")
+	bool GetLocomotionData(FGAFLocomotionData& OutData);
 };

@@ -40,7 +40,7 @@ void UGAFCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float De
 {
 	CachedLocomotionData = FGAFLocomotionData{};
 
-	const IGAFLocomotionDataProvider* Provider =
+	IGAFLocomotionDataProvider* Provider =
 		Cast<IGAFLocomotionDataProvider>(CharacterOwner);
 
 	// 调用接口函数获取数据并存入缓存

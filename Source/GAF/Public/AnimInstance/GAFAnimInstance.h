@@ -16,12 +16,13 @@ class GAF_API UGAFAnimationInstance :
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "GAF|Traversal")
-	virtual void SetTraversalInteractionTransform(const FTransform& InInteractionTransform) override;
+	// ---- IGAFAnimInstanceDataProvider 的 C++ 默认实现 ----
+	// 蓝图 AnimInstance 子类可覆写 _Implementation 函数
+	virtual void SetTraversalInteractionTransform_Implementation(const FTransform& InInteractionTransform) override;
 
 	const FTransform& GetTraversalInteractionTransform() const { return TraversalInteractionTransform; }
 
-	virtual bool GetTraversalPoseHistoryReference(FName PoseHistoryTag, FPoseHistoryReference& OutPoseHistory) const override;
+	virtual bool GetTraversalPoseHistoryReference_Implementation(FName PoseHistoryTag, FPoseHistoryReference& OutPoseHistory) override;
 
 protected:
 	// Traversal Motion Matching 使用的交互目标，由 CharacterTraversalComponent 在检测成功后写入
