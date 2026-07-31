@@ -100,4 +100,12 @@ protected:
 	// 允许 Sprint 时移动方向和角色朝向的夹角阈值
 	UPROPERTY(BlueprintReadOnly, Transient, Category = "GAF|Input")
 	float SprintAngleThreshold{ 50.0f };
+
+	// 当前相机视角风格，由输入或游戏逻辑切换
+	UPROPERTY(BlueprintReadWrite, Transient, Category = "GAF|Camera")
+	EGAFCameraStyle CurrentCameraStyle{ EGAFCameraStyle::Explore };
+
+	// 当前相机左右偏好侧，由输入或游戏逻辑切换
+	UPROPERTY(BlueprintReadWrite, Transient, Category = "GAF|Camera")
+	EGAFCameraSide CurrentCameraSide{ EGAFCameraSide::Right };
 };

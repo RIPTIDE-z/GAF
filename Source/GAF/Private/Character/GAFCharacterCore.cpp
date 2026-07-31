@@ -154,7 +154,9 @@ bool AGAFCharacterCore::GetAnimationFrameData(FGAFAnimationFrameData& OutData) c
 
 bool AGAFCharacterCore::GetCameraFrameData(FGAFCameraFrameData& OutData) const
 {
-	return false;
+	OutData.CameraStyle = CurrentCameraStyle;
+	OutData.CameraSide = CurrentCameraSide;
+	return true;
 }
 
 bool AGAFCharacterCore::GetTraversalFrameData(FGAFTraversalFrameData& OutData) const

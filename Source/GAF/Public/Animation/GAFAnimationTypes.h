@@ -6,6 +6,28 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GAFAnimationTypes.generated.h"
 
+// 相机视角风格 — 瞄准 / 探索 / 战斗
+UENUM(BlueprintType)
+enum class EGAFCameraStyle : uint8
+{
+	// 默认探索视角
+	Explore,
+	// 瞄准视角
+	Aim,
+	// 战斗视角
+	Combat
+};
+
+// 相机左右偏好侧
+UENUM(BlueprintType)
+enum class EGAFCameraSide : uint8
+{
+	// 右侧
+	Right,
+	// 左侧
+	Left
+};
+
 USTRUCT(BlueprintType)
 struct GAF_API FGAFAnimationFrameData
 {
@@ -58,11 +80,19 @@ struct GAF_API FGAFAnimationFrameData
 	FVector GroundNormal{ ForceInit };
 };
 
-// TODO: 摄像机
+// 摄像机帧数据，由 CharacterCore 每帧填充，供 AnimInstance 或相机系统消费
 USTRUCT(BlueprintType)
 struct GAF_API FGAFCameraFrameData
 {
 	GENERATED_BODY()
+
+	// 当前相机视角风格
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Camera")
+	EGAFCameraStyle CameraStyle{ EGAFCameraStyle::Explore };
+
+	// 当前相机左右偏好侧
+	UPROPERTY(BlueprintReadOnly, Category = "GAF|Camera")
+	EGAFCameraSide CameraSide{ EGAFCameraSide::Right };
 };
 
 // TODO: 翻越系统

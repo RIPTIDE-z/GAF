@@ -17,6 +17,8 @@ namespace GAFGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Aim, "GAF.InputTag.Aim", "Aim input");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_ChangeRotationMode, "GAF.InputTag.ChangeRotationMode", "Change rotation mode input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_ChangeCameraSide, "GAF.InputTag.ChangeCameraSide", "Toggle camera side between Right and Left");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_ChangeCameraDistance, "GAF.InputTag.ChangeCameraDistance", "Cycle camera style via mouse wheel: Aim/Explore/Combat");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gait, "GAF.Gait", "Gait Root");
 

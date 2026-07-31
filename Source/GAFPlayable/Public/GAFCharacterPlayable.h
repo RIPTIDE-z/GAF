@@ -52,4 +52,15 @@ protected:
 	virtual void Input_OnJumpStarted(const FInputActionValue& ActionValue);
 	virtual void Input_OnJumpTriggered(const FInputActionValue& ActionValue);
 	virtual void Input_OnJumpReleased(const FInputActionValue& ActionValue);
+
+	// 切换相机左右偏好侧，输入触发时翻转 Right <-> Left
+	virtual void Input_ChangeCameraSide(const FInputActionValue& ActionValue);
+
+	// 鼠标滚轮切换相机视角风格，滚轮 delta 累加到内部 index 后映射到 CameraStyle
+	// index 0=Aim, 1=Explore, 2=Combat，超出范围时循环回绕
+	virtual void Input_ChangeCameraDistance(const FInputActionValue& ActionValue);
+
+protected:
+	// 相机视角风格索引，接收鼠标滚轮 delta 累加，驱动 CurrentCameraStyle
+	int32 CameraStyleIndex{ 1 };
 };

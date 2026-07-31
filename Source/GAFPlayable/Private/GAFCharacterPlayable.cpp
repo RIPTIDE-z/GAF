@@ -106,6 +106,11 @@ void AGAFCharacterPlayable::SetupPlayerInputComponent(UInputComponent* Input)
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Triggered, this, &ThisClass::Input_OnJumpTriggered, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Completed, this, &ThisClass::Input_OnJumpReleased, false);
 	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_Jump, ETriggerEvent::Canceled, this, &ThisClass::Input_OnJumpReleased, false);
+
+	// 相机切换输入 — ChangeCameraSide 任意触发即翻转，ChangeCameraDistance 用 Triggered 接收滚轮 delta
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeCameraSide, ETriggerEvent::Triggered, this, &ThisClass::Input_ChangeCameraSide, false);
+
+	GAFInput::BindNativeAction(EnhancedInput, InputConfig, GAFGamePlayTags::InputTag_ChangeCameraDistance, ETriggerEvent::Triggered, this, &ThisClass::Input_ChangeCameraDistance, false);
 }
 
 void AGAFCharacterPlayable::HandleInputPressed(FGameplayTag InputTag)
@@ -366,4 +371,41 @@ void AGAFCharacterPlayable::Input_OnJumpReleased(const FInputActionValue& Action
 	(void)ActionValue;
 
 	StopJumping();
+}
+
+// TODO: 让相机系统更为灵活，拓展性更强，目前逻辑比较死板
+// 切换相机左右偏好侧，每次触发翻转 Right <-> Left
+void AGAFCharacterPlayable::Input_ChangeCameraSide(const FInputActionValue& ActionValue)
+{
+	(void)ActionValue;
+
+	CurrentCameraSide = (CurrentCameraSide == EGAFCameraSide::Right)
+		? EGAFCameraSide::Left
+		: EGAFCameraSide::Right;
+}
+
+// 鼠标滚轮切换相机视角风格
+// 滚轮 delta 累积到 CameraStyleIndex 后循环映射:
+//   0 -> Aim, 1 -> Explore, 2 -> Combat
+// 正值(上滚)减小 index，负值(下滚)增加 index，超出范围时回绕
+void AGAFCharacterPlayable::Input_ChangeCameraDistance(const FInputActionValue& ActionValue)
+{
+	const float WheelDelta = ActionValue.Get<float>();
+
+	// 将 float delta 转为 int32 符号方向，滚轮上滚(+)使 index 减小，下滚(-)使 index 增大
+	const int32 Direction = FMath::Sign(WheelDelta);
+	CameraStyleIndex -= Direction;
+
+	// 循环回绕: -1 -> 2, 3 -> 0
+	constexpr int32 StyleCount = 3;
+	CameraStyleIndex = ((CameraStyleIndex % StyleCount) + StyleCount) % StyleCount;
+
+	// index -> CameraStyle 映射
+	static const EGAFCameraStyle StyleMap[StyleCount] = {
+		EGAFCameraStyle::Aim,	  // 0
+		EGAFCameraStyle::Explore, // 1
+		EGAFCameraStyle::Combat	  // 2
+	};
+
+	CurrentCameraStyle = StyleMap[CameraStyleIndex];
 }
