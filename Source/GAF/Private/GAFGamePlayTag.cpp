@@ -37,6 +37,10 @@ namespace GAFGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_Sliding, "GAF.MovementMode.Sliding", "MovementMode - Sliding");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementMode_Traversing, "GAF.MovementMode.Traversing", "MovementMode - Traversing");
 
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementState, "GAF.MovementState", "MovementState Root");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementState_Idle, "GAF.MovementState.Idle", "Character intends to remain idle");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(MovementState_Moving, "GAF.MovementState.Moving", "Character intends to move");
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode, "GAF.RotationMode", "RotationMode Root");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(RotationMode_OrientToMovement, "GAF.RotationMode.OrientToMovement", "RotationMode - OrientToMovement");

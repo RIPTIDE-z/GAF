@@ -14,6 +14,7 @@ public class GAF : ModuleRules
 				"DeveloperSettings",
 				"GameplayTags",
 				"AnimGraphRuntime",
+				"AnimationWarpingRuntime",
 				"MotionWarping",
 				"Chooser",
 				"PoseSearch"

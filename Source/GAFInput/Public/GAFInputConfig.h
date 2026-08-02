@@ -76,6 +76,6 @@ public:
 	TArray<FGAFInputAction> AbilityInputActions;
 
 	// 输入参数
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InputSettings", Meta = (ShowOnlyInnerProperties))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAFInput")
 	FGAFInputSettings InputSettings;
 };

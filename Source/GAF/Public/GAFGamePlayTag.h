@@ -37,6 +37,11 @@ namespace GAFGamePlayTags
 	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(MovementMode_Sliding);
 	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(MovementMode_Traversing);
 
+	// MovementState
+	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(MovementState);
+	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(MovementState_Idle);
+	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(MovementState_Moving);
+
 	// RotationMode
 	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(RotationMode);
 	GAF_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(RotationMode_OrientToMovement);
