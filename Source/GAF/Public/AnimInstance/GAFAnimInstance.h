@@ -16,8 +16,7 @@ class GAF_API UGAFAnimationInstance :
 	GENERATED_BODY()
 
 public:
-	// ---- IGAFAnimInstanceDataProvider 的 C++ 默认实现 ----
-	// 蓝图 AnimInstance 子类可覆写 _Implementation 函数
+	// IGAFAnimInstanceDataProvider 的 C++ 默认实现
 	virtual void SetTraversalInteractionTransform_Implementation(const FTransform& InInteractionTransform) override;
 
 	const FTransform& GetTraversalInteractionTransform() const { return TraversalInteractionTransform; }

@@ -39,13 +39,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	TObjectPtr<const UGAFCharacterSettings> CharacterSettings;
 
-	// ---- IGAFCharacterDataProvider 的 C++ 默认实现 ----
+	// IGAFCharacterDataProvider 的 C++ 默认实现
 	// 蓝图子类可覆写这些 _Implementation 函数改变数据组装逻辑
 	virtual bool GetAnimationFrameData_Implementation(FGAFAnimationFrameData& OutData) override;
 	virtual bool GetCameraFrameData_Implementation(FGAFCameraFrameData& OutData) override;
 	virtual bool GetTraversalFrameData_Implementation(FGAFTraversalFrameData& OutData) override;
 
-	// ---- IGAFLocomotionDataProvider 的 C++ 默认实现 ----
+	// IGAFLocomotionDataProvider 的 C++ 默认实现
 	virtual bool GetLocomotionData_Implementation(FGAFLocomotionData& OutData) override;
 
 	// 根据传入的bActive修改输入Tag

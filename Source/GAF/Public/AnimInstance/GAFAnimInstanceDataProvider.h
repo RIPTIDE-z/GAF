@@ -6,7 +6,6 @@
 #include "GAFAnimInstanceDataProvider.generated.h"
 
 // AnimInstance 数据提供者接口，负责写入 Traversal 交互目标和获取 PoseHistory
-// BlueprintType + 去掉 CannotImplementInterfaceInBlueprint 使蓝图 AnimInstance 子类可以覆写
 UINTERFACE(BlueprintType)
 class UGAFAnimInstanceDataProvider : public UInterface
 {

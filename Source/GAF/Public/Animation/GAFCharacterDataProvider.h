@@ -5,7 +5,6 @@
 
 // 角色数据提供者接口
 // BlueprintType 允许蓝图识别该接口类型
-// 去掉 CannotImplementInterfaceInBlueprint 使蓝图类可以继承并覆写接口函数
 UINTERFACE(BlueprintType)
 class UGAFCharacterDataProvider : public UInterface
 {
